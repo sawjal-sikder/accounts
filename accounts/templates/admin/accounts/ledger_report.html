@@ -1,0 +1,107 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+
+<h1>Ledger Report</h1>
+
+<form method="get">
+
+    <label for="account">Account:</label>
+
+    <select name="account" id="account">
+        <option value="">---------</option>
+
+        {% for account in accounts %}
+            <option
+                value="{{ account.id }}"
+                {% if selected_account.id == account.id %}
+                    selected
+                {% endif %}
+            >
+                {{ account.code }} - {{ account.name }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <button type="submit" class="button">
+        Generate Report
+    </button>
+
+</form>
+
+{% if selected_account %}
+
+<br>
+
+<h2>
+    {{ selected_account.code }} -
+    {{ selected_account.name }}
+</h2>
+
+<table class="admin-table">
+
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Reference</th>
+            <th>Description</th>
+            <th>Debit</th>
+            <th>Credit</th>
+            <th>Balance</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        <tr>
+            <td colspan="5">
+                <strong>Opening Balance</strong>
+            </td>
+            <td>
+                <strong>
+                    {{ selected_account.opening_balance }}
+                </strong>
+            </td>
+        </tr>
+
+        {% for row in ledger %}
+
+        <tr>
+            <td>{{ row.date }}</td>
+            <td>{{ row.reference }}</td>
+            <td>{{ row.description }}</td>
+            <td>{{ row.debit }}</td>
+            <td>{{ row.credit }}</td>
+            <td>
+                <strong>{{ row.balance }}</strong>
+            </td>
+        </tr>
+
+        {% empty %}
+
+        <tr>
+            <td colspan="6">
+                No posted transactions found.
+            </td>
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+    <tfoot>
+
+        <tr>
+            <th colspan="3">Total</th>
+            <th>{{ total_debit }}</th>
+            <th>{{ total_credit }}</th>
+            <th>{{ closing_balance }}</th>
+        </tr>
+
+    </tfoot>
+
+</table>
+
+{% endif %}
+
+{% endblock %}
