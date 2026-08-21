@@ -1,7 +1,252 @@
 {% extends "admin/base_site.html" %}
 {% load i18n static %}
 
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/dashboard.css" %}">{% endblock %}
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static "admin/css/dashboard.css" %}">
+<style>
+  /* Modern Dashboard Layout */
+  .dashboard-grid {
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    align-items: flex-start;
+    margin-top: 15px;
+    width: 100%;
+  }
+
+  .dashboard-grid .app-list-container {
+    flex: 1 1 55%;
+    min-width: 320px;
+  }
+
+  .dashboard-grid .analytics-sidebar {
+    flex: 1 1 45%;
+    min-width: 300px;
+    background: var(--body-bg, #ffffff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    padding: 24px;
+    box-sizing: border-box;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Dark mode overrides (Django 4.0+) */
+  @media (prefers-color-scheme: dark) {
+    .dashboard-grid .analytics-sidebar {
+      background: var(--body-bg, #1e1e1e);
+      border-color: var(--border-color, #333333);
+    }
+  }
+
+  /* Responsive Stacking */
+  @media (max-width: 1024px) {
+    .dashboard-grid {
+      flex-direction: column;
+    }
+    .dashboard-grid .app-list-container,
+    .dashboard-grid .analytics-sidebar {
+      flex: 1 1 100%;
+      width: 100%;
+    }
+  }
+
+  /* Typography & Widgets */
+  .analytics-header {
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--primary, #79aec8);
+    padding-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .analytics-header h2 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--body-fg, #333);
+  }
+
+  .badge-fallback {
+    background-color: #f57c00;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: inline-block;
+  }
+
+  .badge-today {
+    background-color: var(--primary, #79aec8);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: inline-block;
+  }
+
+  /* Stats Card Row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--darkened-bg, #f8f9fa);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .stat-card .stat-label {
+    font-size: 0.8rem;
+    color: var(--body-quiet-color, #666);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-card .stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--body-fg, #111);
+  }
+
+  .stat-card.primary-stat .stat-value {
+    color: var(--primary, #79aec8);
+  }
+
+  /* View Toggle Buttons */
+  .toggle-container {
+    display: flex;
+    justify-content: center;
+    background: var(--darkened-bg, #f1f3f4);
+    border-radius: 6px;
+    padding: 4px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color, #e0e0e0);
+  }
+
+  .toggle-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--body-quiet-color, #555);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .toggle-btn.active {
+    background: var(--primary, #79aec8);
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Chart & Legend Styling */
+  .chart-wrapper {
+    position: relative;
+    height: 250px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .no-chart-library-warning {
+    color: var(--body-quiet-color, #666);
+    font-style: italic;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    display: none;
+  }
+
+  /* Breakdown Table */
+  .breakdown-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    margin-top: 15px;
+  }
+
+  .breakdown-table th,
+  .breakdown-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color, #eee);
+  }
+
+  .breakdown-table th {
+    font-weight: 600;
+    color: var(--body-quiet-color, #555);
+    background: var(--darkened-bg, #fcfcfc);
+  }
+
+  .breakdown-table td.amount {
+    text-align: right;
+    font-family: monospace;
+    font-weight: bold;
+  }
+
+  .breakdown-table td.percent {
+    text-align: right;
+    color: var(--body-quiet-color, #777);
+  }
+
+  .color-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  /* Empty State styling */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--body-quiet-color, #777);
+  }
+
+  .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    color: var(--border-color, #ccc);
+  }
+
+  .empty-state p {
+    font-size: 1.05rem;
+    margin-bottom: 20px;
+  }
+
+  .empty-state .button {
+    background: var(--primary, #79aec8);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  .empty-state .button:hover {
+    opacity: 0.9;
+  }
+</style>
+{% endblock %}
 
 {% block coltype %}colM{% endblock %}
 
@@ -12,11 +257,283 @@
 {% block nav-sidebar %}{% endblock %}
 
 {% block content %}
-<div id="content-main" class="app-list">
-  {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+<div class="dashboard-grid">
+  <!-- Left Side: Standard Django App List -->
+  <div class="app-list-container">
+    <div id="content-main" class="app-list" style="width: 100%;">
+      {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+    </div>
+  </div>
+
+  <!-- Right Side: Analytics & Pie Chart Dashboard -->
+  <div class="analytics-sidebar">
+    {% if chart_data.has_data %}
+      <div class="analytics-header">
+        <h2>Transactions ({{ chart_data.date }})</h2>
+        {% if chart_data.is_today %}
+          <span class="badge-today">Today</span>
+        {% else %}
+          <span class="badge-fallback" title="No active transactions recorded today. Displaying last active date.">Last Active Day</span>
+        {% endif %}
+      </div>
+
+      <!-- Stats Summary cards -->
+      <div class="stats-row">
+        <div class="stat-card primary-stat">
+          <div class="stat-label">Total Volume</div>
+          <div class="stat-value" id="stats-volume">0.00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Posted Entries</div>
+          <div class="stat-value">{{ chart_data.total_posted_journals }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Draft Entries</div>
+          <div class="stat-value">{{ chart_data.total_draft_journals }}</div>
+        </div>
+      </div>
+
+      <!-- View Toggle Buttons -->
+      <div class="toggle-container">
+        <button class="toggle-btn active" id="toggle-account" onclick="switchView('account')">By Account</button>
+        <button class="toggle-btn" id="toggle-group" onclick="switchView('group')">By Category</button>
+      </div>
+
+      <!-- Chart Wrapper -->
+      <div class="chart-wrapper">
+        <canvas id="transactionPieChart"></canvas>
+        <div id="fallback-bars" style="display: none; width: 100%;"></div>
+      </div>
+      <div class="no-chart-library-warning" id="library-warning">
+        * Displaying text list fallback since ChartJS was unable to load.
+      </div>
+
+      <!-- Detail Breakdown Table -->
+      <div>
+        <h3 style="font-size: 1rem; margin-bottom: 10px; font-weight: 600;">Distribution Breakdown</h3>
+        <table class="breakdown-table" id="breakdown-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th style="text-align: right;">Amount</th>
+              <th style="text-align: right;">Share</th>
+            </tr>
+          </thead>
+          <tbody id="breakdown-tbody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+    {% else %}
+      <!-- Empty State / No Data at all -->
+      <div class="empty-state">
+        <div class="empty-state-icon">📊</div>
+        <h2>No Transactions Yet</h2>
+        <p>There are no posted transactions in the system to analyze.</p>
+        {% url 'admin:accounts_journal_add' as add_journal_url %}
+        {% if add_journal_url %}
+          <a href="{{ add_journal_url }}" class="button">Create First Journal</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
 </div>
+
+<!-- Load Chart.js from CDN with a robust timeout and error handler -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Safely inject django context variables into JavaScript -->
+{{ chart_data|json_script:"chart-data" }}
+
+<script>
+  // Ensure the page continues to function perfectly even if the ChartJS script fails to load
+  let myChart = null;
+  let activeView = 'account';
+
+  // Securely fetch chart data from script tag
+  const rawData = document.getElementById('chart-data');
+  const chartData = rawData ? JSON.parse(rawData.textContent) : null;
+
+  // Modern financial color palette
+  const PALETTE = [
+    '#2e7d32', // Dark Green
+    '#1565c0', // Dark Blue
+    '#f57c00', // Orange
+    '#c62828', // Crimson Red
+    '#6a1b9a', // Deep Purple
+    '#00838f', // Dark Cyan
+    '#37474f', // Blue Grey
+    '#ad1457', // Deep Pink
+    '#d84315', // Rust/Terracotta
+    '#4e342e', // Brown
+    '#558b2f', // Light Green
+    '#0277bd'  // Cyan Blue
+  ];
+
+  function formatCurrency(value) {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  }
+
+  function updateBreakdownTable(labels, values) {
+    const tbody = document.getElementById('breakdown-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const total = values.reduce((sum, val) => sum + val, 0);
+
+    if (labels.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--body-quiet-color, #777); font-style: italic;">No posted items.</td></tr>';
+      return;
+    }
+
+    labels.forEach((label, idx) => {
+      const amount = values[idx];
+      const percent = total > 0 ? ((amount / total) * 100).toFixed(1) + '%' : '0.0%';
+      const color = PALETTE[idx % PALETTE.length];
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <span class="color-dot" style="background-color: ${color};"></span>
+          ${label}
+        </td>
+        <td class="amount">${formatCurrency(amount)}</td>
+        <td class="percent">${percent}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderHTMLFallback(labels, values) {
+    const wrapper = document.querySelector('.chart-wrapper');
+    const canvas = document.getElementById('transactionPieChart');
+    const fallbackDiv = document.getElementById('fallback-bars');
+    const warning = document.getElementById('library-warning');
+
+    if (canvas) canvas.style.display = 'none';
+    if (warning) warning.style.display = 'block';
+    if (fallbackDiv) {
+      fallbackDiv.style.display = 'block';
+      fallbackDiv.innerHTML = '';
+
+      const total = values.reduce((sum, val) => sum + val, 0);
+      labels.forEach((label, idx) => {
+        const amount = values[idx];
+        const percent = total > 0 ? (amount / total) * 100 : 0;
+        const color = PALETTE[idx % PALETTE.length];
+
+        const barContainer = document.createElement('div');
+        barContainer.style.marginBottom = '12px';
+        barContainer.innerHTML = `
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+            <span>${label}</span>
+            <strong>${formatCurrency(amount)} (${percent.toFixed(1)}%)</strong>
+          </div>
+          <div style="background-color: var(--darkened-bg, #eee); height: 8px; border-radius: 4px; overflow: hidden;">
+            <div style="background-color: ${color}; width: ${percent}%; height: 100%;"></div>
+          </div>
+        `;
+        fallbackDiv.appendChild(barContainer);
+      });
+    }
+  }
+
+  function renderPieChart(labels, values) {
+    const canvas = document.getElementById('transactionPieChart');
+    if (!canvas) return;
+
+    // Check if ChartJS loaded successfully
+    if (typeof Chart === 'undefined') {
+      renderHTMLFallback(labels, values);
+      return;
+    }
+
+    // Colors mapping
+    const backgroundColors = labels.map((_, idx) => PALETTE[idx % PALETTE.length]);
+
+    if (myChart) {
+      myChart.data.labels = labels;
+      myChart.data.datasets[0].data = values;
+      myChart.data.datasets[0].backgroundColor = backgroundColors;
+      myChart.update();
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    myChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: backgroundColors,
+          borderWidth: 1,
+          borderColor: 'var(--body-bg, #fff)'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false // Hide standard legend, our HTML breakdown table acts as a beautiful, detailed interactive legend!
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const value = context.parsed;
+                const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                const percent = ((value / total) * 100).toFixed(1) + '%';
+                return ` ${context.label}: ${formatCurrency(value)} (${percent})`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function switchView(view) {
+    if (!chartData || !chartData.has_data) return;
+    activeView = view;
+
+    // Update buttons
+    const btnAccount = document.getElementById('toggle-account');
+    const btnGroup = document.getElementById('toggle-group');
+
+    if (view === 'account') {
+      btnAccount.classList.add('active');
+      btnGroup.classList.remove('active');
+      renderPieChart(chartData.account_labels, chartData.account_values);
+      updateBreakdownTable(chartData.account_labels, chartData.account_values);
+    } else {
+      btnAccount.classList.remove('active');
+      btnGroup.classList.add('active');
+      renderPieChart(chartData.group_labels, chartData.group_values);
+      updateBreakdownTable(chartData.group_labels, chartData.group_values);
+    }
+  }
+
+  // Initialize page and load chart
+  document.addEventListener('DOMContentLoaded', function() {
+    if (chartData && chartData.has_data) {
+      // Update primary volume stat card
+      const volumeStatElement = document.getElementById('stats-volume');
+      if (volumeStatElement) {
+        volumeStatElement.textContent = formatCurrency(chartData.total_volume);
+      }
+
+      // Initial render (defaults to Account view)
+      switchView('account');
+    }
+  });
+</script>
 {% endblock %}
 
 {% block sidebar %}
-<!-- Recent Actions Hidden -->
+<!-- Recent Actions Hidden to optimize workspace screen area -->
 {% endblock %}

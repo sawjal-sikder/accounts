@@ -560,3 +560,101 @@ class AccountAdminTests(TestCase):
         # Assert Recent actions / My actions is hidden
         self.assertNotContains(response, "Recent actions")
         self.assertNotContains(response, "My actions")
+
+    def test_admin_index_pie_chart(self):
+        from accounts.models import Journal, JournalLine
+        from datetime import date, timedelta
+        from decimal import Decimal
+
+        # 1. Test case: No transactions at all in the database
+        url = reverse("admin:index")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("chart_data", response.context)
+        self.assertFalse(response.context["chart_data"]["has_data"])
+        self.assertContains(response, "No Transactions Yet")
+
+        # 2. Test case: Fallback to the last active day when today is empty
+        yesterday = date.today() - timedelta(days=1)
+        journal_yesterday = Journal.objects.create(date=yesterday, is_posted=True, reference="YEST-1")
+        JournalLine.objects.create(
+            journal=journal_yesterday,
+            account=self.account,
+            entry_type="debit",
+            amount=Decimal("150.00")
+        )
+        JournalLine.objects.create(
+            journal=journal_yesterday,
+            account=self.account,
+            entry_type="credit",
+            amount=Decimal("150.00")
+        )
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        chart_data = response.context["chart_data"]
+        self.assertTrue(chart_data["has_data"])
+        self.assertFalse(chart_data["is_today"])
+        self.assertEqual(chart_data["date"], yesterday.strftime("%Y-%m-%d"))
+        self.assertEqual(chart_data["total_posted_journals"], 1)
+        self.assertEqual(chart_data["total_volume"], 150.0)
+        self.assertIn("1010 - Cash", chart_data["account_labels"])
+        self.assertEqual(chart_data["account_values"], [300.0])  # debit + credit = 150 + 150 = 300 total activity amount
+        self.assertIn("Asset", chart_data["group_labels"])
+        self.assertEqual(chart_data["group_values"], [300.0])
+
+        # 3. Test case: Today has transactions
+        journal_today = Journal.objects.create(date=date.today(), is_posted=True, reference="TOD-1")
+        JournalLine.objects.create(
+            journal=journal_today,
+            account=self.account,
+            entry_type="debit",
+            amount=Decimal("200.00")
+        )
+        JournalLine.objects.create(
+            journal=journal_today,
+            account=self.account,
+            entry_type="credit",
+            amount=Decimal("200.00")
+        )
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        chart_data = response.context["chart_data"]
+        self.assertTrue(chart_data["has_data"])
+        self.assertTrue(chart_data["is_today"])
+        self.assertEqual(chart_data["date"], date.today().strftime("%Y-%m-%d"))
+        self.assertEqual(chart_data["total_posted_journals"], 1)
+        self.assertEqual(chart_data["total_volume"], 200.0)
+        self.assertEqual(chart_data["account_values"], [400.0])
+
+    def test_reports_layout_and_no_currency_symbols(self):
+        # Test Balance Sheet layout and absence of currency symbols
+        bs_url = reverse("admin:account-balance-sheet")
+        response = self.client.get(bs_url)
+        self.assertEqual(response.status_code, 200)
+        # Verify the HTML contains the raw amount and the 100% max-width for full screen
+        self.assertContains(response, "100.00")
+        self.assertContains(response, "max-width: 100%;")
+        self.assertNotContains(response, "$")
+        self.assertNotContains(response, "৳")
+        
+        # Test Trial Balance layout and absence of currency symbols
+        tb_url = reverse("admin:account-trial-balance")
+        response = self.client.get(tb_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "100.00")
+        self.assertContains(response, "max-width: 100%;")
+        self.assertNotContains(response, "$")
+        self.assertNotContains(response, "৳")
+
+        # Test Ledger Report layout and absence of currency symbols
+        lr_url = reverse("admin:account-ledger-report") + f"?account={self.account.id}"
+        response = self.client.get(lr_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "100.00")
+        self.assertNotContains(response, "$")
+        self.assertNotContains(response, "৳")
+
+
+

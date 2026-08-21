@@ -94,8 +94,8 @@
             </td>
             <td>{{ row.reference }}</td>
             <td>{{ row.description }}</td>
-            <td>{{ row.debit }}</td>
-            <td>{{ row.credit }}</td>
+            <td>{% if row.debit %}{{ row.debit }}{% else %}-{% endif %}</td>
+            <td>{% if row.credit %}{{ row.credit }}{% else %}-{% endif %}</td>
             <td>
                 <strong>{{ row.balance }}</strong>
             </td>

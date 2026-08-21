@@ -17,9 +17,9 @@ document.addEventListener("DOMContentLoaded", function() {
     summaryDiv.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
 
     summaryDiv.innerHTML = `
-        <div>Total Debits: <span id="js-total-debit" style="color: #447e9b;">TK 0.00</span></div>
-        <div>Total Credits: <span id="js-total-credit" style="color: #447e9b;">TK 0.00</span></div>
-        <div>Difference: <span id="js-difference" style="color: #ba2121;">TK 0.00</span></div>
+        <div>Total Debits: <span id="js-total-debit" style="color: #447e9b;">0.00</span></div>
+        <div>Total Credits: <span id="js-total-credit" style="color: #447e9b;">0.00</span></div>
+        <div>Difference: <span id="js-difference" style="color: #ba2121;">0.00</span></div>
         <div>Status: <span id="js-balance-status" style="padding: 4px 8px; border-radius: 3px; font-size: 0.9em;">Balanced</span></div>
     `;
 
@@ -63,10 +63,10 @@ document.addEventListener("DOMContentLoaded", function() {
         const diffSpan = document.getElementById("js-difference");
         const statusSpan = document.getElementById("js-balance-status");
 
-        if (debitSpan) debitSpan.textContent = "TK " + totalDebit.toFixed(2);
-        if (creditSpan) creditSpan.textContent = "TK " + totalCredit.toFixed(2);
+        if (debitSpan) debitSpan.textContent = totalDebit.toFixed(2);
+        if (creditSpan) creditSpan.textContent = totalCredit.toFixed(2);
         if (diffSpan) {
-            diffSpan.textContent = "TK " + difference.toFixed(2);
+            diffSpan.textContent = difference.toFixed(2);
             diffSpan.style.color = difference === 0 ? "#2e5c1e" : "#ba2121";
         }
 

@@ -3,7 +3,7 @@
 {% block content %}
 <style>
     .trial-balance {
-        max-width: 900px;
+        max-width: 100%;
         margin: 20px 0;
         font-family: var(--font-family-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
     }
@@ -151,8 +151,8 @@
                             <td>{{ row.account.code }}</td>
                             <td class="tb-account-indent">{{ row.account.name }}</td>
                             <td>{{ group_item.group.name }}</td>
-                            <td class="tb-amount">{{ row.debit }}</td>
-                            <td class="tb-amount">{{ row.credit }}</td>
+                            <td class="tb-amount">{% if row.debit %}{{ row.debit }}{% else %}-{% endif %}</td>
+                            <td class="tb-amount">{% if row.credit %}{{ row.credit }}{% else %}-{% endif %}</td>
                         </tr>
                     {% endfor %}
                     <tr class="tb-subtotal-row">
@@ -190,7 +190,7 @@
     {% if total_debit == total_credit and total_debit != 0 %}
         <div class="tb-status-banner tb-status-balanced">
             <span>Status: Trial Balance is in Perfect Balance ✓</span>
-            <span>Difference: $0.00</span>
+            <span>Difference: 0.00</span>
         </div>
     {% elif total_debit != total_credit %}
         <div class="tb-status-banner tb-status-unbalanced">
