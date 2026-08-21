@@ -45,15 +45,15 @@
         {% endfor %}
 
         {% if app.app_label == 'accounts' %}
-          {% url 'admin:account-current-balances' as cb_url %}
+          {% url 'admin:account-balance-sheet' as bs_url %}
           {% url 'admin:account-ledger-report' as lr_url %}
           
-          <tr class="model-current-balances{% if cb_url and cb_url in request.path %} current-model{% endif %}">
-            <th scope="row" id="{{ app.app_label }}-current-balances">
-              {% if cb_url %}
-                <a href="{{ cb_url }}"{% if cb_url in request.path %} aria-current="page"{% endif %}>Current Balances</a>
+          <tr class="model-balance-sheet{% if bs_url and bs_url in request.path %} current-model{% endif %}">
+            <th scope="row" id="{{ app.app_label }}-balance-sheet">
+              {% if bs_url %}
+                <a href="{{ bs_url }}"{% if bs_url in request.path %} aria-current="page"{% endif %}>Balance Sheet</a>
               {% else %}
-                Current Balances
+                Balance Sheet
               {% endif %}
             </th>
             <td></td>

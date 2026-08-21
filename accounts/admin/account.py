@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render
 from decimal import Decimal
-from accounts.models import Account, JournalLine
+from accounts.models import Account, AccountGroup, JournalLine
 
 
 @admin.register(Account)
@@ -56,9 +56,9 @@ class AccountAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path(
-                "current-balances/",
-                self.admin_site.admin_view(self.current_balances_view),
-                name="account-current-balances",
+                "balance-sheet/",
+                self.admin_site.admin_view(self.balance_sheet_view),
+                name="account-balance-sheet",
             ),
             path(
                 "ledger-report/",
@@ -68,26 +68,92 @@ class AccountAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
-    def current_balances_view(self, request):
-        accounts = Account.objects.all().select_related("group")
-        report = []
+    def balance_sheet_view(self, request):
+        accounts = Account.objects.all().select_related("group").order_by("group__code", "code")
+        
+        assets_by_group = {}
+        liabilities_by_group = {}
+        equity_by_group = {}
+        
+        total_revenue = Decimal("0.00")
+        total_expense = Decimal("0.00")
+        
         for account in accounts:
-            debit = account.get_posted_debit_total()
-            credit = account.get_posted_credit_total()
+            g_type = account.group.group_type
             balance = account.current_balance
-            report.append({
-                "account": account,
-                "opening": account.opening_balance,
-                "debit": debit,
-                "credit": credit,
-                "balance": balance,
-            })
+            
+            if g_type == AccountGroup.GroupType.ASSET:
+                group_id = account.group.id
+                if group_id not in assets_by_group:
+                    assets_by_group[group_id] = {
+                        "group": account.group,
+                        "accounts": [],
+                        "total": Decimal("0.00"),
+                    }
+                assets_by_group[group_id]["accounts"].append({
+                    "account": account,
+                    "balance": balance,
+                })
+                assets_by_group[group_id]["total"] += balance
+                
+            elif g_type == AccountGroup.GroupType.LIABILITY:
+                group_id = account.group.id
+                if group_id not in liabilities_by_group:
+                    liabilities_by_group[group_id] = {
+                        "group": account.group,
+                        "accounts": [],
+                        "total": Decimal("0.00"),
+                    }
+                liabilities_by_group[group_id]["accounts"].append({
+                    "account": account,
+                    "balance": balance,
+                })
+                liabilities_by_group[group_id]["total"] += balance
+                
+            elif g_type == AccountGroup.GroupType.EQUITY:
+                group_id = account.group.id
+                if group_id not in equity_by_group:
+                    equity_by_group[group_id] = {
+                        "group": account.group,
+                        "accounts": [],
+                        "total": Decimal("0.00"),
+                    }
+                equity_by_group[group_id]["accounts"].append({
+                    "account": account,
+                    "balance": balance,
+                })
+                equity_by_group[group_id]["total"] += balance
+                
+            elif g_type == AccountGroup.GroupType.REVENUE:
+                total_revenue += balance
+                
+            elif g_type == AccountGroup.GroupType.EXPENSE:
+                total_expense += balance
+
+        assets = list(assets_by_group.values())
+        liabilities = list(liabilities_by_group.values())
+        equity = list(equity_by_group.values())
+        
+        net_income = total_revenue - total_expense
+        total_assets = sum(g["total"] for g in assets)
+        total_liabilities = sum(g["total"] for g in liabilities)
+        total_equity_groups = sum(g["total"] for g in equity)
+        total_equity = total_equity_groups + net_income
+        total_liabilities_and_equity = total_liabilities + total_equity
+
         context = {
             **self.admin_site.each_context(request),
-            "title": "Account Current Balances",
-            "report": report,
+            "title": "Balance Sheet",
+            "assets": assets,
+            "liabilities": liabilities,
+            "equity": equity,
+            "net_income": net_income,
+            "total_assets": total_assets,
+            "total_liabilities": total_liabilities,
+            "total_equity": total_equity,
+            "total_liabilities_and_equity": total_liabilities_and_equity,
         }
-        return render(request, "admin/accounts/current_balances.html", context)
+        return render(request, "admin/accounts/balance_sheet.html", context)
 
     def ledger_report_view(self, request):
         account_id = request.GET.get("account")

@@ -1,0 +1,259 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<style>
+    .balance-sheet {
+        max-width: 900px;
+        margin: 20px 0;
+        font-family: var(--font-family-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+    }
+    .bs-section {
+        margin-bottom: 40px;
+        background: var(--body-bg, #fff);
+        border: 1px solid var(--border-color, #ccc);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .bs-section-header {
+        background: var(--primary, #79aec8);
+        color: var(--primary-contrast, #fff);
+        padding: 12px 16px;
+        margin: 0;
+        font-size: 1.3em;
+        font-weight: 600;
+    }
+    .bs-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+    .bs-table th, .bs-table td {
+        padding: 10px 16px;
+        text-align: left;
+    }
+    .bs-table th {
+        background: var(--selected-row, #f5f5f5);
+        color: var(--body-fg, #333);
+        font-weight: 600;
+        border-bottom: 2px solid var(--border-color, #ddd);
+    }
+    .bs-group-header {
+        background: rgba(0, 0, 0, 0.03);
+        font-weight: bold;
+        color: var(--body-fg, #333);
+        border-top: 1px solid var(--border-color, #ddd);
+        border-bottom: 1px solid var(--border-color, #ddd);
+    }
+    .bs-account-row td {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .bs-account-indent {
+        padding-left: 30px !important;
+    }
+    .bs-amount {
+        text-align: right !important;
+        font-variant-numeric: tabular-nums;
+    }
+    .bs-subtotal-row {
+        font-weight: bold;
+        background: rgba(0, 0, 0, 0.01);
+        border-bottom: 1.5px solid var(--border-color, #ccc);
+    }
+    .bs-subtotal-row td {
+        border-top: 1px solid var(--border-color, #ddd);
+    }
+    .bs-section-total-row {
+        font-weight: bold;
+        font-size: 1.1em;
+        background: var(--selected-row, #eef4f7);
+        border-top: 2px solid var(--border-color, #bbb);
+        border-bottom: 4px double var(--border-color, #bbb);
+    }
+    .bs-grand-total-row {
+        font-weight: bold;
+        font-size: 1.25em;
+        background: #e2f0d9; /* subtle light green for balancing success */
+        color: #2e5c1e;
+        border-top: 2.5px solid #2e5c1e;
+        border-bottom: 5px double #2e5c1e;
+    }
+    /* Dark mode adjustments */
+    @media (prefers-color-scheme: dark) {
+        .bs-grand-total-row {
+            background: #204015;
+            color: #a3e28c;
+            border-top: 2.5px solid #a3e28c;
+            border-bottom: 5px double #a3e28c;
+        }
+        .bs-group-header {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .bs-subtotal-row {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .bs-section-total-row {
+            background: rgba(121, 174, 200, 0.15);
+        }
+    }
+</style>
+
+<h1>Balance Sheet</h1>
+
+<div class="balance-sheet">
+
+    <!-- ASSETS SECTION -->
+    <div class="bs-section">
+        <h2 class="bs-section-header">Assets</h2>
+        <table class="bs-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Account / Group</th>
+                    <th class="bs-amount">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group_item in assets %}
+                    <tr class="bs-group-header">
+                        <td>{{ group_item.group.code }}</td>
+                        <td colspan="2">{{ group_item.group.name }}</td>
+                    </tr>
+                    {% for acc_item in group_item.accounts %}
+                        <tr class="bs-account-row">
+                            <td>{{ acc_item.account.code }}</td>
+                            <td class="bs-account-indent">{{ acc_item.account.name }}</td>
+                            <td class="bs-amount">{{ acc_item.balance }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr class="bs-subtotal-row">
+                        <td></td>
+                        <td style="text-align: right;">Subtotal - {{ group_item.group.name }}</td>
+                        <td class="bs-amount">{{ group_item.total }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3">No asset accounts found.</td>
+                    </tr>
+                {% endfor %}
+                <tr class="bs-section-total-row">
+                    <td></td>
+                    <td>Total Assets</td>
+                    <td class="bs-amount">{{ total_assets }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- LIABILITIES SECTION -->
+    <div class="bs-section">
+        <h2 class="bs-section-header">Liabilities</h2>
+        <table class="bs-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Account / Group</th>
+                    <th class="bs-amount">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group_item in liabilities %}
+                    <tr class="bs-group-header">
+                        <td>{{ group_item.group.code }}</td>
+                        <td colspan="2">{{ group_item.group.name }}</td>
+                    </tr>
+                    {% for acc_item in group_item.accounts %}
+                        <tr class="bs-account-row">
+                            <td>{{ acc_item.account.code }}</td>
+                            <td class="bs-account-indent">{{ acc_item.account.name }}</td>
+                            <td class="bs-amount">{{ acc_item.balance }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr class="bs-subtotal-row">
+                        <td></td>
+                        <td style="text-align: right;">Subtotal - {{ group_item.group.name }}</td>
+                        <td class="bs-amount">{{ group_item.total }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3">No liability accounts found.</td>
+                    </tr>
+                {% endfor %}
+                <tr class="bs-section-total-row">
+                    <td></td>
+                    <td>Total Liabilities</td>
+                    <td class="bs-amount">{{ total_liabilities }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- EQUITY SECTION -->
+    <div class="bs-section">
+        <h2 class="bs-section-header">Equity</h2>
+        <table class="bs-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Account / Group</th>
+                    <th class="bs-amount">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group_item in equity %}
+                    <tr class="bs-group-header">
+                        <td>{{ group_item.group.code }}</td>
+                        <td colspan="2">{{ group_item.group.name }}</td>
+                    </tr>
+                    {% for acc_item in group_item.accounts %}
+                        <tr class="bs-account-row">
+                            <td>{{ acc_item.account.code }}</td>
+                            <td class="bs-account-indent">{{ acc_item.account.name }}</td>
+                            <td class="bs-amount">{{ acc_item.balance }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr class="bs-subtotal-row">
+                        <td></td>
+                        <td style="text-align: right;">Subtotal - {{ group_item.group.name }}</td>
+                        <td class="bs-amount">{{ group_item.total }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3">No equity accounts found.</td>
+                    </tr>
+                {% endfor %}
+                
+                <!-- Net Income Line -->
+                <tr class="bs-account-row" style="font-weight: bold; background: rgba(0, 0, 0, 0.02);">
+                    <td></td>
+                    <td>Net Income (Current Period Earnings)</td>
+                    <td class="bs-amount" style="border-bottom: 1.5px solid var(--border-color, #ccc);">{{ net_income }}</td>
+                </tr>
+
+                <tr class="bs-section-total-row">
+                    <td></td>
+                    <td>Total Equity</td>
+                    <td class="bs-amount">{{ total_equity }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- BALANCE SHEET SUMMARY / BALANCING CHECK -->
+    <div class="bs-section">
+        <h2 class="bs-section-header" style="background: #2e5c1e;">Summary Comparison</h2>
+        <table class="bs-table">
+            <tbody>
+                <tr class="bs-section-total-row">
+                    <td style="width: 50%;">Total Assets</td>
+                    <td class="bs-amount" style="width: 50%;">{{ total_assets }}</td>
+                </tr>
+                <tr class="bs-grand-total-row">
+                    <td>Total Liabilities and Equity</td>
+                    <td class="bs-amount">{{ total_liabilities_and_equity }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}
