@@ -61,7 +61,7 @@ class JournalLineInline(admin.TabularInline):
     )
 
 
-@admin.register(JournalLine)
+# Unregistered as standalone admin to hide it from index, remains available as inline
 class JournalLineAdmin(admin.ModelAdmin):
     list_display = (
         "id",

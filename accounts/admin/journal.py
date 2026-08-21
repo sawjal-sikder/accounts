@@ -20,10 +20,10 @@ class JournalAdmin(admin.ModelAdmin):
         "created_at",
     )
 
-    list_filter = (
-        "is_posted",
-        "date",
-    )
+    # list_filter = (
+    #     "is_posted",
+    #     "date",
+    # )
 
     search_fields = (
         "reference",

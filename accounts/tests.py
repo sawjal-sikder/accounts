@@ -524,3 +524,25 @@ class AccountAdminTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Administration")
         self.assertNotContains(response, "Django administration")
+
+    def test_admin_hidden_models(self):
+        from django.contrib import admin
+        from accounts.models import JournalLine
+        from django.contrib.auth.models import Group, User
+
+        # Assert models are unregistered globally from admin.site
+        self.assertFalse(admin.site.is_registered(JournalLine))
+        self.assertFalse(admin.site.is_registered(Group))
+        self.assertFalse(admin.site.is_registered(User))
+
+        # Assert they do not appear in the admin index page HTML
+        url = reverse("admin:index")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Journal lines")
+        self.assertNotContains(response, "Groups")
+        self.assertNotContains(response, "Users")
+        
+        # Assert Recent actions / My actions is hidden
+        self.assertNotContains(response, "Recent actions")
+        self.assertNotContains(response, "My actions")
