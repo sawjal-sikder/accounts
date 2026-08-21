@@ -512,6 +512,20 @@ class AccountAdminTests(TestCase):
         self.assertEqual(response.context["total_credit"], Decimal("150.00"))
         self.assertEqual(response.context["total_debit"], response.context["total_credit"])
 
+        # Verify group-wise structure and subtotals
+        report = response.context["report"]
+        self.assertEqual(len(report), 2)  # Assets (Cash) and Equity (Capital) groups
+        
+        # Check first group (Assets) subtotal
+        assets_group = next(g for g in report if g["group"].group_type == "asset")
+        self.assertEqual(assets_group["total_debit"], Decimal("150.00"))
+        self.assertEqual(assets_group["total_credit"], Decimal("0.00"))
+        
+        # Check second group (Equity) subtotal
+        equity_group = next(g for g in report if g["group"].group_type == "equity")
+        self.assertEqual(equity_group["total_debit"], Decimal("0.00"))
+        self.assertEqual(equity_group["total_credit"], Decimal("150.00"))
+
     def test_admin_branding_customization(self):
         from django.contrib import admin
         self.assertEqual(admin.site.site_header, "Administration")

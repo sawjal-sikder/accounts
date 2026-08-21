@@ -44,7 +44,8 @@
     {{ selected_account.name }}
 </h2>
 
-<table class="admin-table">
+<div class="ledger-table-container" style="overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border-color, #ccc); border-radius: 4px; margin-top: 15px; background: var(--body-bg, #fff);">
+<table class="admin-table" style="min-width: 800px; margin: 0; width: 100%;">
 
     <thead>
         <tr>
@@ -124,6 +125,7 @@
     </tfoot>
 
 </table>
+</div>
 
 {% endif %}
 

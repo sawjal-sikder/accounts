@@ -12,7 +12,8 @@
         background: var(--body-bg, #fff);
         border: 1px solid var(--border-color, #ccc);
         border-radius: 4px;
-        overflow: hidden;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     .bs-section-header {
         background: var(--primary, #79aec8);
@@ -21,11 +22,14 @@
         margin: 0;
         font-size: 1.3em;
         font-weight: 600;
+        position: sticky;
+        left: 0;
     }
     .bs-table {
         width: 100%;
         border-collapse: collapse;
         margin: 0;
+        min-width: 650px;
     }
     .bs-table th, .bs-table td {
         padding: 10px 16px;

@@ -296,9 +296,9 @@ class AccountAdmin(admin.ModelAdmin):
             except ValueError:
                 pass
 
-        accounts = Account.objects.all().select_related("group").order_by("code")
+        accounts = Account.objects.all().select_related("group").order_by("group__code", "code")
         
-        report = []
+        groups_dict = {}
         total_debit = Decimal("0.00")
         total_credit = Decimal("0.00")
         
@@ -335,12 +335,25 @@ class AccountAdmin(admin.ModelAdmin):
                 else:
                     debit_val = abs(balance)
                     total_debit += abs(balance)
+            
+            group = account.group
+            if group.id not in groups_dict:
+                groups_dict[group.id] = {
+                    "group": group,
+                    "accounts": [],
+                    "total_debit": Decimal("0.00"),
+                    "total_credit": Decimal("0.00"),
+                }
                     
-            report.append({
+            groups_dict[group.id]["accounts"].append({
                 "account": account,
                 "debit": debit_val if debit_val != Decimal("0.00") else "",
                 "credit": credit_val if credit_val != Decimal("0.00") else "",
             })
+            groups_dict[group.id]["total_debit"] += debit_val
+            groups_dict[group.id]["total_credit"] += credit_val
+            
+        report = list(groups_dict.values())
             
         context = {
             **self.admin_site.each_context(request),

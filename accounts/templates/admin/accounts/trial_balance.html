@@ -18,12 +18,14 @@
         background: var(--body-bg, #fff);
         border: 1px solid var(--border-color, #ccc);
         border-radius: 4px;
-        overflow: hidden;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     .tb-table {
         width: 100%;
         border-collapse: collapse;
         margin: 0;
+        min-width: 650px;
     }
     .tb-table th, .tb-table td {
         padding: 10px 16px;
@@ -37,6 +39,24 @@
     }
     .tb-row td {
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .tb-group-header {
+        background: rgba(0, 0, 0, 0.03);
+        font-weight: bold;
+        color: var(--body-fg, #333);
+        border-top: 1px solid var(--border-color, #ddd);
+        border-bottom: 1px solid var(--border-color, #ddd);
+    }
+    .tb-account-indent {
+        padding-left: 30px !important;
+    }
+    .tb-subtotal-row {
+        font-weight: bold;
+        background: rgba(0, 0, 0, 0.01);
+        border-bottom: 1.5px solid var(--border-color, #ccc);
+    }
+    .tb-subtotal-row td {
+        border-top: 1px solid var(--border-color, #ddd);
     }
     .tb-amount {
         text-align: right !important;
@@ -84,6 +104,12 @@
         .tb-total-row {
             background: rgba(121, 174, 200, 0.15);
         }
+        .tb-group-header {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .tb-subtotal-row {
+            background: rgba(255, 255, 255, 0.02);
+        }
     }
 </style>
 
@@ -115,13 +141,37 @@
                 </tr>
             </thead>
             <tbody>
-                {% for row in report %}
-                    <tr class="tb-row">
-                        <td>{{ row.account.code }}</td>
-                        <td>{{ row.account.name }}</td>
-                        <td>{{ row.account.group.name }}</td>
-                        <td class="tb-amount">{{ row.debit }}</td>
-                        <td class="tb-amount">{{ row.credit }}</td>
+                {% for group_item in report %}
+                    <tr class="tb-group-header">
+                        <td>{{ group_item.group.code }}</td>
+                        <td colspan="4">{{ group_item.group.name }}</td>
+                    </tr>
+                    {% for row in group_item.accounts %}
+                        <tr class="tb-row">
+                            <td>{{ row.account.code }}</td>
+                            <td class="tb-account-indent">{{ row.account.name }}</td>
+                            <td>{{ group_item.group.name }}</td>
+                            <td class="tb-amount">{{ row.debit }}</td>
+                            <td class="tb-amount">{{ row.credit }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr class="tb-subtotal-row">
+                        <td></td>
+                        <td colspan="2" style="text-align: right;">Subtotal - {{ group_item.group.name }}</td>
+                        <td class="tb-amount">
+                            {% if group_item.total_debit != 0 %}
+                                {{ group_item.total_debit }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="tb-amount">
+                            {% if group_item.total_credit != 0 %}
+                                {{ group_item.total_credit }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                     </tr>
                 {% empty %}
                     <tr>
