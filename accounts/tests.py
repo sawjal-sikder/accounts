@@ -445,6 +445,10 @@ class AccountAdminTests(TestCase):
         
         # Verify amount display method
         self.assertEqual(admin_instance.amount(obj), Decimal("250.00"))
+        
+        # Verify accounts_list display method
+        expected_html = f"{self.account.name} dr 250.00<br>{self.account.name} cr 250.00"
+        self.assertEqual(admin_instance.accounts_list(obj), expected_html)
 
     def test_trial_balance_view(self):
         url = reverse("admin:account-trial-balance")
@@ -507,3 +511,16 @@ class AccountAdminTests(TestCase):
         self.assertEqual(response.context["total_debit"], Decimal("150.00"))
         self.assertEqual(response.context["total_credit"], Decimal("150.00"))
         self.assertEqual(response.context["total_debit"], response.context["total_credit"])
+
+    def test_admin_branding_customization(self):
+        from django.contrib import admin
+        self.assertEqual(admin.site.site_header, "Administration")
+        self.assertEqual(admin.site.site_title, "Administration")
+        self.assertEqual(admin.site.index_title, "Administration")
+
+        # Let's hit the admin index page and make sure it has 'Administration' in it
+        url = reverse("admin:index")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Administration")
+        self.assertNotContains(response, "Django administration")
