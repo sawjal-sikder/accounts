@@ -1,0 +1,153 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<style>
+    .trial-balance {
+        max-width: 900px;
+        margin: 20px 0;
+        font-family: var(--font-family-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+    }
+    .tb-filter-form {
+        margin-bottom: 25px;
+        padding: 15px;
+        background: var(--body-bg, #fff);
+        border: 1px solid var(--border-color, #ccc);
+        border-radius: 4px;
+    }
+    .tb-section {
+        background: var(--body-bg, #fff);
+        border: 1px solid var(--border-color, #ccc);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .tb-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+    .tb-table th, .tb-table td {
+        padding: 10px 16px;
+        text-align: left;
+    }
+    .tb-table th {
+        background: var(--primary, #79aec8);
+        color: var(--primary-contrast, #fff);
+        font-weight: 600;
+        border-bottom: 2px solid var(--border-color, #ddd);
+    }
+    .tb-row td {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .tb-amount {
+        text-align: right !important;
+        font-variant-numeric: tabular-nums;
+        font-weight: bold;
+    }
+    .tb-total-row {
+        font-weight: bold;
+        font-size: 1.15em;
+        background: var(--selected-row, #eef4f7);
+        border-top: 2.5px solid var(--border-color, #bbb);
+        border-bottom: 5px double var(--border-color, #bbb);
+    }
+    .tb-status-banner {
+        margin-top: 20px;
+        padding: 12px 16px;
+        border-radius: 4px;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .tb-status-balanced {
+        background: #e2f0d9;
+        color: #2e5c1e;
+        border: 1px solid #2e5c1e;
+    }
+    .tb-status-unbalanced {
+        background: #fce4d6;
+        color: #c55a11;
+        border: 1px solid #c55a11;
+    }
+    /* Dark mode adjustments */
+    @media (prefers-color-scheme: dark) {
+        .tb-status-balanced {
+            background: #204015;
+            color: #a3e28c;
+            border-color: #a3e28c;
+        }
+        .tb-status-unbalanced {
+            background: #501d0a;
+            color: #ff9d6c;
+            border-color: #ff9d6c;
+        }
+        .tb-total-row {
+            background: rgba(121, 174, 200, 0.15);
+        }
+    }
+</style>
+
+<h1>Trial Balance Statement</h1>
+
+<div class="trial-balance">
+
+    <form method="get" class="tb-filter-form">
+        <label for="from_date">From:</label>
+        <input type="date" name="from_date" id="from_date" value="{{ from_date_val }}">
+
+        <label for="to_date" style="margin-left: 15px;">To:</label>
+        <input type="date" name="to_date" id="to_date" value="{{ to_date_val }}">
+
+        <button type="submit" class="button" style="margin-left: 15px;">
+            Generate Statement
+        </button>
+    </form>
+
+    <div class="tb-section">
+        <table class="tb-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Account</th>
+                    <th>Group</th>
+                    <th class="tb-amount" style="width: 20%;">Debit</th>
+                    <th class="tb-amount" style="width: 20%;">Credit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report %}
+                    <tr class="tb-row">
+                        <td>{{ row.account.code }}</td>
+                        <td>{{ row.account.name }}</td>
+                        <td>{{ row.account.group.name }}</td>
+                        <td class="tb-amount">{{ row.debit }}</td>
+                        <td class="tb-amount">{{ row.credit }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5">No accounts found.</td>
+                    </tr>
+                {% endfor %}
+                <tr class="tb-total-row">
+                    <td colspan="3">Total</td>
+                    <td class="tb-amount">{{ total_debit }}</td>
+                    <td class="tb-amount">{{ total_credit }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    {% if total_debit == total_credit and total_debit != 0 %}
+        <div class="tb-status-banner tb-status-balanced">
+            <span>Status: Trial Balance is in Perfect Balance ✓</span>
+            <span>Difference: $0.00</span>
+        </div>
+    {% elif total_debit != total_credit %}
+        <div class="tb-status-banner tb-status-unbalanced">
+            <span>Status: Double-Entry Balancing Error ✗</span>
+            <span>Difference: {{ total_debit|default:0|add:0 }} - {{ total_credit|default:0|add:0 }}</span>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

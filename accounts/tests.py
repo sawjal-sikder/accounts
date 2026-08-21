@@ -239,3 +239,271 @@ class AccountAdminTests(TestCase):
 
         # Verify that total assets equals total liabilities and equity
         self.assertEqual(response.context["total_assets"], response.context["total_liabilities_and_equity"])
+
+    def test_ledger_report_period_filtering(self):
+        from accounts.models import Journal, JournalLine
+        from datetime import date
+        from decimal import Decimal
+
+        # self.account is Cash (normal balance = debit), starting with 100.00 opening balance.
+        # Create a counterpart account Group and Account (e.g. Transportation Expense)
+        group = AccountGroup.objects.create(
+            code="5000",
+            name="Expenses",
+            group_type="expense",
+            is_active=True
+        )
+        transport_acc = Account.objects.create(
+            group=group,
+            code="5020",
+            name="Transportation Expense",
+            normal_balance="debit",
+            opening_balance=Decimal("0.00"),
+            is_active=True
+        )
+
+        # Create transactions:
+        # 1. 2026-08-05: Debit of 50.00 (posted)
+        # 2. 2026-08-15: Credit of 30.00 (posted) with counterpart Transportation Expense (Debit of 30.00)
+        # 3. 2026-08-25: Debit of 80.00 (posted)
+
+        j1 = Journal.objects.create(date=date(2026, 8, 5), is_posted=True, reference="TX-1")
+        JournalLine.objects.create(
+            journal=j1,
+            account=self.account,
+            entry_type="debit",
+            amount=Decimal("50.00")
+        )
+
+        j2 = Journal.objects.create(date=date(2026, 8, 15), is_posted=True, reference="TX-2")
+        JournalLine.objects.create(
+            journal=j2,
+            account=self.account,
+            entry_type="credit",
+            amount=Decimal("30.00")
+        )
+        JournalLine.objects.create(
+            journal=j2,
+            account=transport_acc,
+            entry_type="debit",
+            amount=Decimal("30.00")
+        )
+
+        j3 = Journal.objects.create(date=date(2026, 8, 25), is_posted=True, reference="TX-3")
+        JournalLine.objects.create(
+            journal=j3,
+            account=self.account,
+            entry_type="debit",
+            amount=Decimal("80.00")
+        )
+
+        # Query the ledger report for period: 2026-08-10 to 2026-08-20
+        url = reverse("admin:account-ledger-report")
+        response = self.client.get(url, {
+            "account": self.account.id,
+            "from_date": "2026-08-10",
+            "to_date": "2026-08-20"
+        })
+        self.assertEqual(response.status_code, 200)
+
+        # Expected period opening balance: 100.00 (opening) + 50.00 (debit on 2026-08-05) = 150.00
+        self.assertEqual(response.context["period_opening_balance"], Decimal("150.00"))
+
+        # Total debit/credit in period: Total Debit = 0.00, Total Credit = 30.00
+        self.assertEqual(response.context["total_debit"], Decimal("0.00"))
+        self.assertEqual(response.context["total_credit"], Decimal("30.00"))
+
+        # Closing balance: 150.00 - 30.00 = 120.00
+        self.assertEqual(response.context["closing_balance"], Decimal("120.00"))
+
+        # Verify list of lines includes only TX-2 (Credit)
+        self.assertEqual(len(response.context["ledger"]), 1)
+        self.assertEqual(response.context["ledger"][0]["reference"], "TX-2")
+        
+        # Verify opposing accounts list is correct (includes Transportation Expense, debit 30.00)
+        opp_list = response.context["ledger"][0]["opposing_accounts"]
+        self.assertEqual(len(opp_list), 1)
+        self.assertEqual(opp_list[0]["name"], "Transportation Expense")
+        self.assertEqual(opp_list[0]["type"], "dr")
+        self.assertEqual(opp_list[0]["amount"], Decimal("30.00"))
+
+    def test_journal_inline_formset_validation(self):
+        from accounts.admin.journalline import JournalLineFormSet
+        from django.forms import inlineformset_factory
+        from accounts.models import Journal, JournalLine
+        from datetime import date
+
+        # Create parent journal
+        journal = Journal.objects.create(
+            date=date.today(),
+            is_posted=True,
+            reference="VAL-1"
+        )
+
+        # Create inline formset class
+        JournalLineFormSetFactory = inlineformset_factory(
+            Journal,
+            JournalLine,
+            formset=JournalLineFormSet,
+            fields=("account", "entry_type", "amount", "description")
+        )
+
+        # 1. Test Unbalanced posted journal: Debits 100.00, Credits 50.00
+        data = {
+            "lines-TOTAL_FORMS": "2",
+            "lines-INITIAL_FORMS": "0",
+            "lines-MIN_NUM_FORMS": "0",
+            "lines-MAX_NUM_FORMS": "1000",
+            "lines-0-account": self.account.id,
+            "lines-0-entry_type": "debit",
+            "lines-0-amount": "100.00",
+            "lines-0-description": "Line 1",
+            "lines-1-account": self.account.id,
+            "lines-1-entry_type": "credit",
+            "lines-1-amount": "50.00",
+            "lines-1-description": "Line 2",
+        }
+        formset = JournalLineFormSetFactory(data, instance=journal, prefix="lines")
+        # Since is_posted is True, formset.is_valid() should be False due to unbalanced lines
+        self.assertFalse(formset.is_valid())
+        self.assertIn("Double-entry balancing error", formset.non_form_errors()[0])
+
+        # 2. Test Balanced posted journal: Debits 100.00, Credits 100.00
+        data = {
+            "lines-TOTAL_FORMS": "2",
+            "lines-INITIAL_FORMS": "0",
+            "lines-MIN_NUM_FORMS": "0",
+            "lines-MAX_NUM_FORMS": "1000",
+            "lines-0-account": self.account.id,
+            "lines-0-entry_type": "debit",
+            "lines-0-amount": "100.00",
+            "lines-0-description": "Line 1",
+            "lines-1-account": self.account.id,
+            "lines-1-entry_type": "credit",
+            "lines-1-amount": "100.00",
+            "lines-1-description": "Line 2",
+        }
+        formset = JournalLineFormSetFactory(data, instance=journal, prefix="lines")
+        self.assertTrue(formset.is_valid())
+
+        # 3. Test Unbalanced draft journal: is_posted = False
+        draft_journal = Journal.objects.create(
+            date=date.today(),
+            is_posted=False,
+            reference="VAL-DRAFT"
+        )
+        data = {
+            "lines-TOTAL_FORMS": "2",
+            "lines-INITIAL_FORMS": "0",
+            "lines-MIN_NUM_FORMS": "0",
+            "lines-MAX_NUM_FORMS": "1000",
+            "lines-0-account": self.account.id,
+            "lines-0-entry_type": "debit",
+            "lines-0-amount": "100.00",
+            "lines-0-description": "Line 1",
+            "lines-1-account": self.account.id,
+            "lines-1-entry_type": "credit",
+            "lines-1-amount": "50.00",
+            "lines-1-description": "Line 2",
+        }
+        formset = JournalLineFormSetFactory(data, instance=draft_journal, prefix="lines")
+        # Since is_posted is False, it is a draft and should be valid even if unbalanced
+        self.assertTrue(formset.is_valid())
+
+    def test_journal_admin_amount_annotation(self):
+        from accounts.admin.journal import JournalAdmin
+        from accounts.models import Journal, JournalLine
+        from django.contrib.admin.sites import AdminSite
+        from datetime import date
+        from decimal import Decimal
+
+        # Create balanced journal with total debit 250.00
+        journal = Journal.objects.create(date=date.today(), is_posted=True, reference="AMT-1")
+        JournalLine.objects.create(
+            journal=journal,
+            account=self.account,
+            entry_type="debit",
+            amount=Decimal("250.00")
+        )
+        JournalLine.objects.create(
+            journal=journal,
+            account=self.account,
+            entry_type="credit",
+            amount=Decimal("250.00")
+        )
+
+        site = AdminSite()
+        admin_instance = JournalAdmin(Journal, site)
+        
+        # Get annotated queryset
+        qs = admin_instance.get_queryset(None)
+        
+        # Find our created journal
+        obj = qs.filter(id=journal.id).first()
+        # Verify annotated total amount attribute
+        self.assertEqual(obj._total_amount, Decimal("250.00"))
+        
+        # Verify amount display method
+        self.assertEqual(admin_instance.amount(obj), Decimal("250.00"))
+
+    def test_trial_balance_view(self):
+        url = reverse("admin:account-trial-balance")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "admin/accounts/trial_balance.html")
+        # Check that sidebar navigation has all report links
+        self.assertContains(response, "Balance Sheet")
+        self.assertContains(response, "Ledger Report")
+        self.assertContains(response, "Trial Balance")
+        # Check that trial balance is marked as current-model
+        self.assertContains(response, 'class="model-trial-balance current-model"')
+
+    def test_trial_balance_calculation(self):
+        from accounts.models import Journal, JournalLine
+        from datetime import date
+        from decimal import Decimal
+
+        # self.account is Cash (Debit normal balance), starts with 100.00
+        # Let's create an Equity Account with 100.00 to match Cash
+        equity_group = AccountGroup.objects.create(
+            code="3000",
+            name="Equity Group",
+            group_type="equity",
+            is_active=True
+        )
+        equity_acc = Account.objects.create(
+            group=equity_group,
+            code="3010",
+            name="Owner's Capital",
+            normal_balance="credit",
+            opening_balance=Decimal("100.00"),
+            is_active=True
+        )
+
+        # Create transactions:
+        # Journal: Debit Cash 50.00, Credit Capital 50.00
+        journal = Journal.objects.create(date=date.today(), is_posted=True, reference="TB-1")
+        JournalLine.objects.create(
+            journal=journal,
+            account=self.account,
+            entry_type="debit",
+            amount=Decimal("50.00")
+        )
+        JournalLine.objects.create(
+            journal=journal,
+            account=equity_acc,
+            entry_type="credit",
+            amount=Decimal("50.00")
+        )
+
+        # Hit Trial Balance view
+        url = reverse("admin:account-trial-balance")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        # Cash = 100.00 (opening) + 50.00 (debit) = 150.00 (debit column)
+        # Capital = 100.00 (opening) + 50.00 (credit) = 150.00 (credit column)
+        # Total Debits = 150.00, Total Credits = 150.00
+        self.assertEqual(response.context["total_debit"], Decimal("150.00"))
+        self.assertEqual(response.context["total_credit"], Decimal("150.00"))
+        self.assertEqual(response.context["total_debit"], response.context["total_credit"])

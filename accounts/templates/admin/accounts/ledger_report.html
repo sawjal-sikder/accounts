@@ -23,7 +23,13 @@
         {% endfor %}
     </select>
 
-    <button type="submit" class="button">
+    <label for="from_date" style="margin-left: 15px;">From:</label>
+    <input type="date" name="from_date" id="from_date" value="{{ from_date_val }}">
+
+    <label for="to_date" style="margin-left: 15px;">To:</label>
+    <input type="date" name="to_date" id="to_date" value="{{ to_date_val }}">
+
+    <button type="submit" class="button" style="margin-left: 15px;">
         Generate Report
     </button>
 
@@ -43,6 +49,7 @@
     <thead>
         <tr>
             <th>Date</th>
+            <th>Account</th>
             <th>Reference</th>
             <th>Description</th>
             <th>Debit</th>
@@ -54,12 +61,12 @@
     <tbody>
 
         <tr>
-            <td colspan="5">
+            <td colspan="6">
                 <strong>Opening Balance</strong>
             </td>
             <td>
                 <strong>
-                    {{ selected_account.opening_balance }}
+                    {{ period_opening_balance }}
                 </strong>
             </td>
         </tr>
@@ -68,6 +75,22 @@
 
         <tr>
             <td>{{ row.date }}</td>
+            <td>
+                {% if row.opposing_accounts %}
+                    <ul style="margin: 0; padding-left: 15px; list-style-type: disc;">
+                        {% for opp in row.opposing_accounts %}
+                            <li>
+                                {{ opp.name }}
+                                <span style="font-size: 0.9em; color: var(--body-quiet-color, #666);">
+                                    ({{ opp.type }} {{ opp.amount }})
+                                </span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
             <td>{{ row.reference }}</td>
             <td>{{ row.description }}</td>
             <td>{{ row.debit }}</td>
@@ -80,7 +103,7 @@
         {% empty %}
 
         <tr>
-            <td colspan="6">
+            <td colspan="7">
                 No posted transactions found.
             </td>
         </tr>
@@ -92,7 +115,7 @@
     <tfoot>
 
         <tr>
-            <th colspan="3">Total</th>
+            <th colspan="4">Total</th>
             <th>{{ total_debit }}</th>
             <th>{{ total_credit }}</th>
             <th>{{ closing_balance }}</th>
