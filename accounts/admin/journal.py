@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.db.models import Sum, Q
 from decimal import Decimal
+from django.utils.safestring import mark_safe
 
 from ..models import Journal
 from .journalline import JournalLineInline
@@ -13,7 +14,7 @@ class JournalAdmin(admin.ModelAdmin):
         "id",
         "date",
         "reference",
-        # "description",
+        "accounts_list",
         "amount",
         "is_posted",
         "created_at",
@@ -63,8 +64,19 @@ class JournalAdmin(admin.ModelAdmin):
                 "lines__amount",
                 filter=Q(lines__entry_type="debit")
             )
+        ).prefetch_related(
+            "lines",
+            "lines__account"
         )
         return queryset
+
+    @admin.display(description="Accounts")
+    def accounts_list(self, obj):
+        parts = []
+        for line in obj.lines.all():
+            entry_type = "dr" if line.entry_type == "debit" else "cr"
+            parts.append(f"{line.account.name} {entry_type} {line.amount}")
+        return mark_safe("<br>".join(parts))
 
     @admin.display(description="Amount", ordering="_total_amount")
     def amount(self, obj):
