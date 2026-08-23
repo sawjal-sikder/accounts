@@ -6,6 +6,7 @@ SPECTACULAR_SETTINGS = {
     "TAGS": [
         # for authentication endpoints
         {"name": "Authentication", "description": "Authentication endpoints", "x-order": 1},
+        {"name": "User", "description": "User management endpoints", "x-order": 5},
         
         # for account group endpoints
         {"name": "Account Groups", "description": "Endpoints for managing account groups", "x-order": 10},

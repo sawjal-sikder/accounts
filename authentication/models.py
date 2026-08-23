@@ -96,5 +96,21 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
+    @property
+    def role(self):
+
+        if not self.is_active:
+            return "inactive"
+
+        if self.is_superuser and self.is_staff:
+            return "superuser"
+
+        if self.is_staff:
+            return "staff"
+
+        return "user"
+
     def __str__(self):
         return self.email
+    
+    
