@@ -17,5 +17,6 @@ SPECTACULAR_SETTINGS = {
         
         # for journal endpoints
         {"name": "Journal", "description": "Endpoints for managing journals", "x-order": 25},
+        {"name": "Journal Line", "description": "Endpoints for managing journal lines", "x-order": 26},
     ]
 }

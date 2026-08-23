@@ -31,10 +31,17 @@ journal_urlpatterns = [
     path('journals/<int:pk>/detail/', JournalDetailView.as_view(), name='journal-detail'),
 ]
 
+# urls for Journal Line app
+from accounts.views.journalline.views import JournalListCreateView, JournalRetrieveUpdateDestroyView
+journal_line_urlpatterns = [
+    path('journal-lines/', JournalListCreateView.as_view(), name='journal-line-list-create'),
+    path('journal-lines/<int:pk>/', JournalRetrieveUpdateDestroyView.as_view(), name='journal-line-retrieve-update-destroy'),
+]
 
 urlpatterns = [
     *group_urlpatterns,
     *account_urlpatterns,
     *organization_urlpatterns,
     *journal_urlpatterns,
+    *journal_line_urlpatterns,
 ]
