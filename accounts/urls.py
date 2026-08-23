@@ -15,8 +15,16 @@ account_urlpatterns = [
 ]
 
 
+# urls for Organization app
+from accounts.views.organization.views import OrganizationListCreateView, OrganizationRetrieveUpdateDestroyView
+organization_urlpatterns = [
+    path('organizations/', OrganizationListCreateView.as_view(), name='organization-list-create'),
+    path('organizations/<int:pk>/', OrganizationRetrieveUpdateDestroyView.as_view(), name='organization-retrieve-update-destroy'),
+]
+
 
 urlpatterns = [
     *group_urlpatterns,
     *account_urlpatterns,
+    *organization_urlpatterns,
 ]
