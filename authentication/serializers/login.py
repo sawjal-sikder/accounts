@@ -10,9 +10,8 @@ class LoginSerializer(TokenObtainPairSerializer):
             "user_details": {
                 "email": self.user.email,
                 "username": self.user.username,
-                "is_active": self.user.is_active,
-                "is_staff": self.user.is_staff,
-                "is_superuser": self.user.is_superuser,
+                "organization": self.user.organization.name if self.user.organization else None,
+                "role": self.user.role,
             },
             "refresh": data['refresh'],
             "access": data['access'],

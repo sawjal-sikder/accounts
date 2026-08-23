@@ -1,4 +1,5 @@
 from django.db import models
+from accounts.models.organization import Organization
 from django.contrib.auth.models import (
     AbstractBaseUser,
     PermissionsMixin,
@@ -53,6 +54,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         max_length=150,
         blank=True,
         null=True
+    )
+    
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="users"
     )
 
     first_name = models.CharField(
