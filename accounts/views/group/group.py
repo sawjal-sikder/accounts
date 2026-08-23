@@ -1,4 +1,5 @@
-from rest_framework import permissions
+from rest_framework import permissions, status
+from rest_framework.response import Response
 from rest_framework import generics
 from accounts.models import AccountGroup
 from accounts.serializers.group.group import GroupSerializer
@@ -28,7 +29,18 @@ class GroupRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     
     def perform_destroy(self, instance):
         instance.is_active = False
-        instance.save()
-        
+        instance.save(update_fields=["is_active"])
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+
+        return Response(
+            {
+                "message": "Account deleted successfully"
+            },
+            status=status.HTTP_200_OK
+        )
+
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)

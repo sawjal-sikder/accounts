@@ -15,6 +15,8 @@ class AccountSerializer(serializers.ModelSerializer):
             'normal_balance',
             'opening_balance',
             'is_active',
+            'created_by',
+            'updated_by',
             'created_at',
             'updated_at',
         ]
