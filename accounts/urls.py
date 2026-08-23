@@ -23,8 +23,18 @@ organization_urlpatterns = [
 ]
 
 
+# urls for Journal app
+from accounts.views.journal.views import JournalListCreateView, JournalRetrieveUpdateDestroyView, JournalDetailView
+journal_urlpatterns = [
+    path('journals/', JournalListCreateView.as_view(), name='journal-list-create'),
+    path('journals/<int:pk>/', JournalRetrieveUpdateDestroyView.as_view(), name='journal-retrieve-update-destroy'),
+    path('journals/<int:pk>/detail/', JournalDetailView.as_view(), name='journal-detail'),
+]
+
+
 urlpatterns = [
     *group_urlpatterns,
     *account_urlpatterns,
     *organization_urlpatterns,
+    *journal_urlpatterns,
 ]
