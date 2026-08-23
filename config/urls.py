@@ -1,8 +1,11 @@
 from django.contrib import admin
 from django.urls import path, include
 from .views import main
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+
+User = get_user_model()
 
 api_v1_urlpatterns = [
     path("accounts/", include("accounts.urls")),

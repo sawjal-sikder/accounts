@@ -9,7 +9,10 @@ class LoginSerializer(TokenObtainPairSerializer):
             "message": "Login successful",
             "user_details": {
                 "email": self.user.email,
-                "full_name": self.user.username,
+                "username": self.user.username,
+                "is_active": self.user.is_active,
+                "is_staff": self.user.is_staff,
+                "is_superuser": self.user.is_superuser,
             },
             "refresh": data['refresh'],
             "access": data['access'],

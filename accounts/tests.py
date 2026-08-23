@@ -1,16 +1,17 @@
 from django.test import TestCase
 from django.urls import reverse
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from accounts.models import Account, AccountGroup
 
 class AccountAdminTests(TestCase):
     def setUp(self):
+        User = get_user_model()
         self.user = User.objects.create_superuser(
             username="admin",
             password="password",
             email="admin@example.com"
         )
-        self.client.login(username="admin", password="password")
+        self.client.login(username="admin@example.com", password="password")
         
         # We need a group and accounts to render the report correctly
         self.group = AccountGroup.objects.create(
@@ -542,7 +543,9 @@ class AccountAdminTests(TestCase):
     def test_admin_hidden_models(self):
         from django.contrib import admin
         from accounts.models import JournalLine
-        from django.contrib.auth.models import Group, User
+        from django.contrib.auth.models import Group
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
 
         # Assert models are unregistered globally from admin.site
         self.assertFalse(admin.site.is_registered(JournalLine))

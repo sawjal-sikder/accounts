@@ -19,6 +19,7 @@ CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
 # Application definition
 INSTALLED_APPS = [
     "accounts",
+    "authentication",
     "corsheaders",
     'django.contrib.admin',
     'django.contrib.auth',
@@ -29,6 +30,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
 ]
+
+AUTH_USER_MODEL = "authentication.User"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
