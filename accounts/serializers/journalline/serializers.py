@@ -6,7 +6,7 @@ class JournalLineSerializer(serializers.ModelSerializer):
         model = JournalLine
         fields = [
             'id',
-            'journal',
+            # 'journal',
             'account',
             'entry_type',
             'amount',
@@ -14,3 +14,8 @@ class JournalLineSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['account'] = instance.account.name if instance.account else None
+        return representation
