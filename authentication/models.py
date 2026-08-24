@@ -1,5 +1,5 @@
 from django.db import models
-from accounts.models.organization import Organization
+from organization.models.organization import Organization
 from django.contrib.auth.models import (
     AbstractBaseUser,
     PermissionsMixin,

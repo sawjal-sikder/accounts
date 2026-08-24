@@ -15,14 +15,6 @@ account_urlpatterns = [
 ]
 
 
-# urls for Organization app
-from accounts.views.organization.views import OrganizationListCreateView, OrganizationRetrieveUpdateDestroyView
-organization_urlpatterns = [
-    path('organizations/', OrganizationListCreateView.as_view(), name='organization-list-create'),
-    path('organizations/<int:pk>/', OrganizationRetrieveUpdateDestroyView.as_view(), name='organization-retrieve-update-destroy'),
-]
-
-
 # urls for Journal app
 from accounts.views.journal.views import JournalListCreateView, JournalRetrieveUpdateDestroyView, JournalDetailView
 journal_urlpatterns = [
@@ -41,7 +33,6 @@ journal_line_urlpatterns = [
 urlpatterns = [
     *group_urlpatterns,
     *account_urlpatterns,
-    *organization_urlpatterns,
     *journal_urlpatterns,
     *journal_line_urlpatterns,
 ]

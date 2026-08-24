@@ -1,8 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from django.contrib.auth import get_user_model
-User = get_user_model()
+from django.conf import settings
 
 
 class AccountGroup(models.Model):
@@ -32,8 +31,8 @@ class AccountGroup(models.Model):
 
     is_active = models.BooleanField(default=True)
 
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="groups_created")
-    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="groups_updated")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="groups_created")
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="groups_updated")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

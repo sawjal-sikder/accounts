@@ -14,7 +14,8 @@ class AuthenticationTests(APITestCase):
         self.user = User.objects.create_user(
             email=self.email,
             username=self.username,
-            password=self.password
+            password=self.password,
+            is_active=True
         )
         self.login_url = reverse("login")
 
@@ -48,7 +49,7 @@ class AuthenticationTests(APITestCase):
         self.assertIn("refresh", response.data)
         self.assertIn("user_details", response.data)
         self.assertEqual(response.data["user_details"]["email"], self.email)
-        self.assertEqual(response.data["user_details"]["full_name"], self.username)
+        self.assertEqual(response.data["user_details"]["username"], self.username)
         self.assertEqual(response.data["message"], "Login successful")
 
     def test_login_failure_with_wrong_password(self):

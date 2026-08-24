@@ -9,7 +9,8 @@ User = get_user_model()
 
 api_v1_urlpatterns = [
     path("accounts/", include("accounts.urls")),
-    path("authentication/", include("authentication.urls"))
+    path("authentication/", include("authentication.urls")),
+    path("organizations/", include("organization.urls")),
 ]
 
 urlpatterns = [

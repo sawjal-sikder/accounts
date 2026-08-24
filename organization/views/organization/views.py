@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions,filters
 from drf_spectacular.utils import extend_schema
-from accounts.models import Organization
-from accounts.serializers.organization.serializers import OrganizationSerializer
+from organization.models import Organization
+from organization.serializers.organization.serializers import OrganizationSerializer
 
 @extend_schema(tags=["Organization"])
 class OrganizationListCreateView(generics.ListCreateAPIView):
