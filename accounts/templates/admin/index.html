@@ -245,6 +245,10 @@
   .empty-state .button:hover {
     opacity: 0.9;
   }
+
+  .backup-button:hover {
+    opacity: 0.85;
+  }
 </style>
 {% endblock %}
 
@@ -267,6 +271,17 @@
 
   <!-- Right Side: Analytics & Pie Chart Dashboard -->
   <div class="analytics-sidebar">
+    <!-- Database Backup Action Block -->
+    <div class="backup-action-block" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color, #e0e0e0); display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.25rem;">💾</span>
+        <span style="font-weight: 600; font-size: 0.95rem; color: var(--body-fg, #333);">Database Backup</span>
+      </div>
+      <a href="/admin/database-backup/" class="backup-button" style="background: var(--primary, #79aec8); color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px; transition: opacity 0.2s;">
+        Download Backup
+      </a>
+    </div>
+
     {% if chart_data.has_data %}
       <div class="analytics-header">
         <h2>Transactions ({{ chart_data.date }})</h2>

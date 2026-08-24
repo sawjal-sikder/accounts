@@ -61,6 +61,11 @@ class AccountAdminTests(TestCase):
         self.assertContains(response, lr_url)
         self.assertContains(response, "Balance Sheet")
         self.assertContains(response, "Ledger Report")
+        
+        # Check that the database backup button is present on the admin home page
+        backup_url = reverse("database-backup")
+        self.assertContains(response, backup_url)
+        self.assertContains(response, "Database Backup")
 
     def test_current_balance_calculation(self):
         from accounts.models import Journal, JournalLine
@@ -655,6 +660,40 @@ class AccountAdminTests(TestCase):
         self.assertContains(response, "100.00")
         self.assertNotContains(response, "$")
         self.assertNotContains(response, "৳")
+
+    def test_database_backup_view_as_admin(self):
+        # When logged in as superuser/staff, downloading database should succeed.
+        from unittest.mock import patch, mock_open
+        url = reverse("database-backup")
+        with patch("os.path.exists", return_value=True):
+            with patch("accounts.views.open", mock_open(read_data=b"mocked sqlite data")) as mock_file:
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(response["Content-Type"], ["application/vnd.sqlite3", "application/octet-stream"])
+                self.assertEqual(response["Content-Disposition"], 'attachment; filename="db_backup.sqlite3"')
+                content = b"".join(response.streaming_content)
+                self.assertEqual(content, b"mocked sqlite data")
+
+    def test_database_backup_view_as_non_admin(self):
+        # Logout the superuser
+        self.client.logout()
+
+        # Try to access as anonymous user - should redirect to login
+        url = reverse("database-backup")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response["Location"])
+
+        # Try to access as non-staff user - should also redirect to login or show denied
+        regular_user = User.objects.create_user(
+            username="regular",
+            password="password",
+            email="regular@example.com"
+        )
+        self.client.login(username="regular", password="password")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response["Location"])
 
 
 
