@@ -8,10 +8,10 @@ class OrganizationMembership(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="company_memberships"
+        related_name="organization_memberships"
     )
 
-    company = models.ForeignKey(
+    organization = models.ForeignKey(
         Organization,
         on_delete=models.CASCADE,
         related_name="memberships"
@@ -25,10 +25,10 @@ class OrganizationMembership(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "company"],
-                name="unique_user_company_membership"
+                fields=["user", "organization"],
+                name="unique_user_organization_membership"
             )
         ]
 
     def __str__(self):
-        return f"{self.user.username} - {self.company.name}"
+        return f"{self.user.username} - {self.organization.name}"
