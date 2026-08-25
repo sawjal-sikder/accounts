@@ -9,7 +9,6 @@ from config.pagination import CustomPagination
 
 @extend_schema(tags=["Journal Line"])
 class JournalListCreateView(generics.ListCreateAPIView):
-    queryset = JournalLine.objects.all()
     serializer_class = JournalLineSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = CustomPagination
@@ -18,13 +17,21 @@ class JournalListCreateView(generics.ListCreateAPIView):
     ordering_fields = ['created_at', 'updated_at']
     ordering = ['-created_at']
 
+    def get_queryset(self):
+        return JournalLine.objects.filter(
+            journal__organization=self.request.user.organization
+        )
 
     
 @extend_schema(tags=["Journal Line"])
 class JournalRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = JournalLine.objects.all()
     serializer_class = JournalLineSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return JournalLine.objects.filter(
+            journal__organization=self.request.user.organization
+        )
 
         
     def perform_destroy(self, instance):

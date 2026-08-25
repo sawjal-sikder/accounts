@@ -8,7 +8,6 @@ from config.pagination import CustomPagination
 
 @extend_schema(tags=["Journal"])
 class JournalListCreateView(generics.ListCreateAPIView):
-    queryset = Journal.objects.filter(is_active=True)
     serializer_class = JournalSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = CustomPagination
@@ -17,15 +16,30 @@ class JournalListCreateView(generics.ListCreateAPIView):
     ordering_fields = ['created_at', 'updated_at']
     ordering = ['-created_at']
 
+    def get_queryset(self):
+        return Journal.objects.filter(
+            is_active=True,
+            organization=self.request.user.organization
+        )
+
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+        serializer.save(
+            organization=self.request.user.organization,
+            created_by=self.request.user,
+            updated_by=self.request.user
+        )
         
     
 @extend_schema(tags=["Journal"])
 class JournalRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Journal.objects.filter(is_active=True)
     serializer_class = JournalSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Journal.objects.filter(
+            is_active=True,
+            organization=self.request.user.organization
+        )
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
@@ -47,6 +61,11 @@ class JournalRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
 @extend_schema(tags=["Journal"])
 class JournalDetailView(generics.RetrieveAPIView):
-    queryset = Journal.objects.filter(is_active=True)
     serializer_class = JournalDetailSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Journal.objects.filter(
+            is_active=True,
+            organization=self.request.user.organization
+        )

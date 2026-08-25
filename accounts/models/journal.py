@@ -3,6 +3,12 @@ from django.conf import settings
 
 
 class Journal(models.Model):
+    organization = models.ForeignKey(
+        "organization.Organization",
+        on_delete=models.CASCADE,
+        related_name="journals"
+    )
+
     date = models.DateField()
     reference = models.CharField(max_length=100,blank=True)
     description = models.TextField(blank=True)

@@ -5,16 +5,19 @@ from accounts.models import Account, AccountGroup
 
 class AccountAdminTests(TestCase):
     def setUp(self):
+        from organization.models.organization import Organization
+        self.organization = Organization.objects.create(name="Test Org", email="test@example.com")
         User = get_user_model()
         self.user = User.objects.create_superuser(
             username="admin",
             password="password",
-            email="admin@example.com"
+            email="admin@example.com",
+            organization=self.organization
         )
         self.client.login(username="admin@example.com", password="password")
         
         # We need a group and accounts to render the report correctly
-        self.group = AccountGroup.objects.create(
+        self.group = AccountGroup.objects.create(organization=self.organization, 
             code="1000",
             name="Assets",
             group_type="asset",
@@ -72,7 +75,7 @@ class AccountAdminTests(TestCase):
         # Add posted debit of 50.00, credit of 30.00, and unposted debit of 10.00
         # Expected current balance = 100.00 + 50.00 - 30.00 = 120.00
         
-        journal1 = Journal.objects.create(date=date.today(), is_posted=True, reference="REF-1")
+        journal1 = Journal.objects.create(organization=self.organization, date=date.today(), is_posted=True, reference="REF-1")
         JournalLine.objects.create(
             journal=journal1,
             account=self.account,
@@ -86,7 +89,7 @@ class AccountAdminTests(TestCase):
             amount=Decimal("30.00")
         )
 
-        journal_unposted = Journal.objects.create(date=date.today(), is_posted=False, reference="REF-UN")
+        journal_unposted = Journal.objects.create(organization=self.organization, date=date.today(), is_posted=False, reference="REF-UN")
         JournalLine.objects.create(
             journal=journal_unposted,
             account=self.account,
@@ -100,7 +103,7 @@ class AccountAdminTests(TestCase):
         # 2. Credit account: Accounts Payable starting with 200.00
         # Add posted debit of 40.00 and credit of 90.00
         # Expected current balance = 200.00 + 90.00 - 40.00 = 250.00
-        group2 = AccountGroup.objects.create(
+        group2 = AccountGroup.objects.create(organization=self.organization, 
             code="2000",
             name="Liabilities",
             group_type="liability",
@@ -115,7 +118,7 @@ class AccountAdminTests(TestCase):
             is_active=True
         )
 
-        journal2 = Journal.objects.create(date=date.today(), is_posted=True, reference="REF-2")
+        journal2 = Journal.objects.create(organization=self.organization, date=date.today(), is_posted=True, reference="REF-2")
         JournalLine.objects.create(
             journal=journal2,
             account=ap_account,
@@ -139,7 +142,7 @@ class AccountAdminTests(TestCase):
 
         # Let's create an Equity Group and an Equity Account with opening balance of 100.00
         # to match Cash's opening balance of 100.00
-        equity_group = AccountGroup.objects.create(
+        equity_group = AccountGroup.objects.create(organization=self.organization, 
             code="3000",
             name="Equity Group",
             group_type="equity",
@@ -155,7 +158,7 @@ class AccountAdminTests(TestCase):
         )
 
         # Create a Revenue Group and account
-        revenue_group = AccountGroup.objects.create(
+        revenue_group = AccountGroup.objects.create(organization=self.organization, 
             code="4000",
             name="Revenue Group",
             group_type="revenue",
@@ -171,7 +174,7 @@ class AccountAdminTests(TestCase):
         )
 
         # Create an Expense Group and account
-        expense_group = AccountGroup.objects.create(
+        expense_group = AccountGroup.objects.create(organization=self.organization, 
             code="5000",
             name="Expense Group",
             group_type="expense",
@@ -188,7 +191,7 @@ class AccountAdminTests(TestCase):
 
         # Make some transactions:
         # Journal 3: Credit Revenue 300.00, Debit Cash 300.00
-        journal3 = Journal.objects.create(date=date.today(), is_posted=True, reference="REF-3")
+        journal3 = Journal.objects.create(organization=self.organization, date=date.today(), is_posted=True, reference="REF-3")
         JournalLine.objects.create(
             journal=journal3,
             account=self.account,  # Cash account, starts with 100.00
@@ -203,7 +206,7 @@ class AccountAdminTests(TestCase):
         )
 
         # Journal 4: Debit Rent Expense 100.00, Credit Cash 100.00
-        journal4 = Journal.objects.create(date=date.today(), is_posted=True, reference="REF-4")
+        journal4 = Journal.objects.create(organization=self.organization, date=date.today(), is_posted=True, reference="REF-4")
         JournalLine.objects.create(
             journal=journal4,
             account=expense_acc,
@@ -248,7 +251,7 @@ class AccountAdminTests(TestCase):
 
         # self.account is Cash (normal balance = debit), starting with 100.00 opening balance.
         # Create a counterpart account Group and Account (e.g. Transportation Expense)
-        group = AccountGroup.objects.create(
+        group = AccountGroup.objects.create(organization=self.organization, 
             code="5000",
             name="Expenses",
             group_type="expense",
@@ -268,7 +271,7 @@ class AccountAdminTests(TestCase):
         # 2. 2026-08-15: Credit of 30.00 (posted) with counterpart Transportation Expense (Debit of 30.00)
         # 3. 2026-08-25: Debit of 80.00 (posted)
 
-        j1 = Journal.objects.create(date=date(2026, 8, 5), is_posted=True, reference="TX-1")
+        j1 = Journal.objects.create(organization=self.organization, date=date(2026, 8, 5), is_posted=True, reference="TX-1")
         JournalLine.objects.create(
             journal=j1,
             account=self.account,
@@ -276,7 +279,7 @@ class AccountAdminTests(TestCase):
             amount=Decimal("50.00")
         )
 
-        j2 = Journal.objects.create(date=date(2026, 8, 15), is_posted=True, reference="TX-2")
+        j2 = Journal.objects.create(organization=self.organization, date=date(2026, 8, 15), is_posted=True, reference="TX-2")
         JournalLine.objects.create(
             journal=j2,
             account=self.account,
@@ -290,7 +293,7 @@ class AccountAdminTests(TestCase):
             amount=Decimal("30.00")
         )
 
-        j3 = Journal.objects.create(date=date(2026, 8, 25), is_posted=True, reference="TX-3")
+        j3 = Journal.objects.create(organization=self.organization, date=date(2026, 8, 25), is_posted=True, reference="TX-3")
         JournalLine.objects.create(
             journal=j3,
             account=self.account,
@@ -335,7 +338,7 @@ class AccountAdminTests(TestCase):
         from datetime import date
 
         # Create parent journal
-        journal = Journal.objects.create(
+        journal = Journal.objects.create(organization=self.organization, 
             date=date.today(),
             is_posted=True,
             reference="VAL-1"
@@ -388,7 +391,7 @@ class AccountAdminTests(TestCase):
         self.assertTrue(formset.is_valid())
 
         # 3. Test Unbalanced draft journal: is_posted = False
-        draft_journal = Journal.objects.create(
+        draft_journal = Journal.objects.create(organization=self.organization, 
             date=date.today(),
             is_posted=False,
             reference="VAL-DRAFT"
@@ -419,7 +422,7 @@ class AccountAdminTests(TestCase):
         from decimal import Decimal
 
         # Create balanced journal with total debit 250.00
-        journal = Journal.objects.create(date=date.today(), is_posted=True, reference="AMT-1")
+        journal = Journal.objects.create(organization=self.organization, date=date.today(), is_posted=True, reference="AMT-1")
         JournalLine.objects.create(
             journal=journal,
             account=self.account,
@@ -470,7 +473,7 @@ class AccountAdminTests(TestCase):
 
         # self.account is Cash (Debit normal balance), starts with 100.00
         # Let's create an Equity Account with 100.00 to match Cash
-        equity_group = AccountGroup.objects.create(
+        equity_group = AccountGroup.objects.create(organization=self.organization, 
             code="3000",
             name="Equity Group",
             group_type="equity",
@@ -487,7 +490,7 @@ class AccountAdminTests(TestCase):
 
         # Create transactions:
         # Journal: Debit Cash 50.00, Credit Capital 50.00
-        journal = Journal.objects.create(date=date.today(), is_posted=True, reference="TB-1")
+        journal = Journal.objects.create(organization=self.organization, date=date.today(), is_posted=True, reference="TB-1")
         JournalLine.objects.create(
             journal=journal,
             account=self.account,
@@ -579,7 +582,7 @@ class AccountAdminTests(TestCase):
 
         # 2. Test case: Fallback to the last active day when today is empty
         yesterday = date.today() - timedelta(days=1)
-        journal_yesterday = Journal.objects.create(date=yesterday, is_posted=True, reference="YEST-1")
+        journal_yesterday = Journal.objects.create(organization=self.organization, date=yesterday, is_posted=True, reference="YEST-1")
         JournalLine.objects.create(
             journal=journal_yesterday,
             account=self.account,
@@ -607,7 +610,7 @@ class AccountAdminTests(TestCase):
         self.assertEqual(chart_data["group_values"], [300.0])
 
         # 3. Test case: Today has transactions
-        journal_today = Journal.objects.create(date=date.today(), is_posted=True, reference="TOD-1")
+        journal_today = Journal.objects.create(organization=self.organization, date=date.today(), is_posted=True, reference="TOD-1")
         JournalLine.objects.create(
             journal=journal_today,
             account=self.account,
@@ -658,6 +661,38 @@ class AccountAdminTests(TestCase):
         self.assertContains(response, "100.00")
         self.assertNotContains(response, "$")
         self.assertNotContains(response, "৳")
+
+
+class AccountSerializerTestCase(TestCase):
+    def setUp(self):
+        from organization.models.organization import Organization
+        self.org = Organization.objects.create(name="My Company", email="myco@example.com")
+        self.group = AccountGroup.objects.create(
+            organization=self.org,
+            code="1100",
+            name="Current Assets",
+            group_type="asset"
+        )
+        self.account = Account.objects.create(
+            group=self.group,
+            code="1110",
+            name="Cash",
+            normal_balance="debit",
+            opening_balance="0.00"
+        )
+
+    def test_serializer_outputs_organization_details(self):
+        from accounts.serializers.account.account import AccountSerializer
+        serializer = AccountSerializer(self.account)
+        data = serializer.data
+        
+        # Verify both organization (ID) and organization_name are correct
+        self.assertEqual(data["organization"], self.org.id)
+        self.assertEqual(data["organization_name"], "My Company")
+        
+        # Verify organization shown for an Account is inherited from its AccountGroup
+        self.assertEqual(data["organization"], self.group.organization_id)
+        self.assertEqual(data["organization_name"], self.group.organization.name)
 
 
 

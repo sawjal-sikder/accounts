@@ -18,17 +18,23 @@ class AccountsConfig(AppConfig):
                 extra_context = {}
 
             today = date.today()
-            todays_journals = Journal.objects.filter(date=today)
+            if hasattr(request.user, 'organization') and request.user.organization:
+                todays_journals = Journal.objects.filter(date=today, organization=request.user.organization)
+            else:
+                todays_journals = Journal.objects.none()
+                
             total_posted_journals = todays_journals.filter(is_posted=True).count()
             total_draft_journals = todays_journals.filter(is_posted=False).count()
 
-            total_volume = JournalLine.objects.filter(
+            base_jl_qs = JournalLine.objects.filter(journal__organization=request.user.organization) if hasattr(request.user, 'organization') and request.user.organization else JournalLine.objects.none()
+
+            total_volume = base_jl_qs.filter(
                 journal__date=today,
                 journal__is_posted=True,
                 entry_type=JournalLine.EntryType.DEBIT
             ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
 
-            account_data = JournalLine.objects.filter(
+            account_data = base_jl_qs.filter(
                 journal__date=today,
                 journal__is_posted=True
             ).values(
@@ -37,7 +43,7 @@ class AccountsConfig(AppConfig):
                 total_amount=Sum("amount")
             ).order_by("-total_amount")
 
-            group_data = JournalLine.objects.filter(
+            group_data = base_jl_qs.filter(
                 journal__date=today,
                 journal__is_posted=True
             ).values(
@@ -76,19 +82,23 @@ class AccountsConfig(AppConfig):
 
             # If no posted transactions today, fall back to the last active transaction day
             if total_posted_journals == 0:
-                latest_journal = Journal.objects.filter(is_posted=True).order_by("-date").first()
+                if hasattr(request.user, 'organization') and request.user.organization:
+                    latest_journal = Journal.objects.filter(is_posted=True, organization=request.user.organization).order_by("-date").first()
+                else:
+                    latest_journal = None
+
                 if latest_journal:
                     fallback_date = latest_journal.date
-                    fb_journals = Journal.objects.filter(date=fallback_date)
+                    fb_journals = Journal.objects.filter(date=fallback_date, organization=request.user.organization)
                     fb_total_posted = fb_journals.filter(is_posted=True).count()
                     fb_total_draft = fb_journals.filter(is_posted=False).count()
-                    fb_volume = JournalLine.objects.filter(
+                    fb_volume = base_jl_qs.filter(
                         journal__date=fallback_date,
                         journal__is_posted=True,
                         entry_type=JournalLine.EntryType.DEBIT
                     ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
 
-                    fb_account_data = JournalLine.objects.filter(
+                    fb_account_data = base_jl_qs.filter(
                         journal__date=fallback_date,
                         journal__is_posted=True
                     ).values(
@@ -97,7 +107,7 @@ class AccountsConfig(AppConfig):
                         total_amount=Sum("amount")
                     ).order_by("-total_amount")
 
-                    fb_group_data = JournalLine.objects.filter(
+                    fb_group_data = base_jl_qs.filter(
                         journal__date=fallback_date,
                         journal__is_posted=True
                     ).values(

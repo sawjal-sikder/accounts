@@ -9,13 +9,19 @@ from config.pagination import CustomPagination
 
 @extend_schema(tags=['Account Groups'])
 class GroupListCreateView(generics.ListCreateAPIView):
-    queryset = AccountGroup.objects.filter(is_active=True)
     serializer_class = GroupSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = CustomPagination
     
+    def get_queryset(self):
+        return AccountGroup.objects.filter(
+            is_active=True,
+            organization=self.request.user.organization
+        )
+    
     def perform_create(self, serializer):
         serializer.save(
+            organization=self.request.user.organization,
             created_by=self.request.user, 
             updated_by=self.request.user
             )
@@ -23,9 +29,14 @@ class GroupListCreateView(generics.ListCreateAPIView):
     
 @extend_schema(tags=['Account Groups'])
 class GroupRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = AccountGroup.objects.filter(is_active=True)
     serializer_class = GroupSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return AccountGroup.objects.filter(
+            is_active=True,
+            organization=self.request.user.organization
+        )
     
     def perform_destroy(self, instance):
         instance.is_active = False

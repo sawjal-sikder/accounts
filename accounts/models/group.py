@@ -10,10 +10,17 @@ class AccountGroup(models.Model):
         LIABILITY = "liability", "Liability"
         EQUITY = "equity", "Equity"
         REVENUE = "revenue", "Revenue"
+        COGS = "cogs", "Cost of Goods Sold"
         EXPENSE = "expense", "Expense"
 
+    organization = models.ForeignKey(
+        "organization.Organization",
+        on_delete=models.CASCADE,
+        related_name="account_groups"
+    )
+
     name = models.CharField(max_length=100)
-    code = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    code = models.CharField(max_length=20, blank=True, null=True)
     group_type = models.CharField(
         max_length=20,
         choices=GroupType.choices
@@ -38,6 +45,12 @@ class AccountGroup(models.Model):
 
     class Meta:
         ordering = ["code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "code"],
+                name="unique_group_code_per_organization"
+            )
+        ]
 
     def __str__(self):
         return f"{self.code} - {self.name}"

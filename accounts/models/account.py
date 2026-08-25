@@ -18,7 +18,6 @@ class Account(models.Model):
 
     code = models.CharField(
         max_length=30,
-        unique=True,
         blank=True,
         null=True
     )

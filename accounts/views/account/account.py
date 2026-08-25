@@ -9,10 +9,15 @@ from config.pagination import CustomPagination
 
 @extend_schema(tags=['Accounts'])
 class AccountListCreateView(generics.ListCreateAPIView):
-    queryset = Account.objects.filter(is_active=True)
     serializer_class = AccountSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = CustomPagination
+    
+    def get_queryset(self):
+        return Account.objects.filter(
+            is_active=True,
+            group__organization=self.request.user.organization
+        ).select_related("group__organization")
     
     def perform_create(self, serializer):
         serializer.save(
@@ -24,9 +29,14 @@ class AccountListCreateView(generics.ListCreateAPIView):
 
 @extend_schema(tags=["Accounts"])
 class AccountRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Account.objects.filter(is_active=True)
     serializer_class = AccountSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Account.objects.filter(
+            is_active=True,
+            group__organization=self.request.user.organization
+        ).select_related("group__organization")
 
     def perform_destroy(self, instance):
         instance.is_active = False

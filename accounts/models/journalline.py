@@ -5,6 +5,8 @@ from accounts.models.journal import Journal
 from accounts.models.account import Account
 
 
+from django.core.exceptions import ValidationError
+
 class JournalLine(models.Model):
     class EntryType(models.TextChoices):
         DEBIT = "debit", "Debit"
@@ -45,6 +47,21 @@ class JournalLine(models.Model):
 
     class Meta:
         ordering = ["id"]
+
+    def clean(self):
+        super().clean()
+        if (
+            self.journal_id
+            and self.account_id
+            and self.journal.organization_id != self.account.group.organization_id
+        ):
+            raise ValidationError(
+                {"account": "Journal and Account must belong to the same organization."}
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return (
