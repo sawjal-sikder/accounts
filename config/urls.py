@@ -1,31 +1,14 @@
 from django.contrib import admin
-from django.urls import path, include
-from .views import main
-from django.contrib.auth.models import Group
-from django.contrib.auth import get_user_model
-from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
-
-User = get_user_model()
-
-api_v1_urlpatterns = [
-    path("accounts/", include("accounts.urls")),
-    path("authentication/", include("authentication.urls")),
-    path("organizations/", include("organization.urls")),
-]
+from django.urls import path
+from django.contrib.auth.models import Group, User
+from accounts.views import database_backup_view
 
 urlpatterns = [
-    # API Endpoints
-    path("", main),
+    path("admin/database-backup/", database_backup_view, name="database-backup"),
+    path("", admin.site.urls),
     path("admin/", admin.site.urls),
-    path("api/v1/", include(api_v1_urlpatterns)),
-
-    # API Documentation
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
-# Unregister the Group and User models from the admin site
 try:
     admin.site.unregister(Group)
 except admin.sites.NotRegistered:

@@ -1,1 +1,0 @@
-from .chart_of_accounts import create_default_chart_of_accounts
