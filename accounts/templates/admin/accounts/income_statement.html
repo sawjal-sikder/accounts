@@ -1,0 +1,435 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<style>
+    .income-statement-container {
+        max-width: 900px;
+        margin: 20px auto;
+        font-family: var(--font-family-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+        color: var(--body-fg, #333);
+    }
+    
+    .report-card {
+        background: var(--body-bg, #fff);
+        border: 1px solid var(--border-color, #eee);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        padding: 40px;
+        margin-top: 20px;
+    }
+    
+    .report-header {
+        text-align: center;
+        border-bottom: 2px solid var(--primary, #79aec8);
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .report-header h1 {
+        font-size: 1.85em;
+        font-weight: 700;
+        margin: 0 0 5px 0;
+        color: var(--body-fg, #222);
+        letter-spacing: -0.5px;
+    }
+    
+    .report-header h2 {
+        font-size: 1.15em;
+        font-weight: 500;
+        margin: 0 0 10px 0;
+        color: var(--body-quiet-color, #666);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .report-header .period-subtitle {
+        font-size: 0.95em;
+        font-style: italic;
+        color: var(--body-quiet-color, #777);
+        margin: 0;
+    }
+    
+    .is-filter-form {
+        margin-bottom: 30px;
+        padding: 18px 24px;
+        background: var(--darkened-bg, #fcfcfc);
+        border: 1px solid var(--border-color, #ddd);
+        border-radius: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .is-filter-form label {
+        font-weight: 600;
+        font-size: 0.9em;
+        color: var(--body-fg, #444);
+    }
+    
+    .is-filter-form input[type="date"] {
+        padding: 6px 10px;
+        border: 1px solid var(--border-color, #ccc);
+        border-radius: 4px;
+        background: var(--body-bg, #fff);
+        color: var(--body-fg, #333);
+        font-size: 0.9em;
+    }
+    
+    .is-filter-form button {
+        padding: 7px 16px;
+        background: var(--primary, #79aec8);
+        color: var(--primary-contrast, #fff);
+        border: none;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .is-filter-form button:hover {
+        opacity: 0.9;
+    }
+    
+    .statement-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 35px;
+        font-size: 0.95em;
+    }
+    
+    .section-title {
+        font-size: 1.25em;
+        font-weight: 700;
+        color: var(--primary, #79aec8);
+        border-bottom: 1.5px solid var(--primary, #79aec8);
+        padding-bottom: 6px;
+        margin-top: 30px;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .statement-table th {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.85em;
+        letter-spacing: 0.5px;
+        color: var(--body-quiet-color, #555);
+        border-bottom: 1px solid var(--border-color, #ddd);
+        padding: 8px 12px;
+    }
+    
+    .group-row td {
+        font-weight: 700;
+        padding: 12px 12px 4px 12px;
+        color: var(--body-fg, #222);
+    }
+    
+    .account-row td {
+        padding: 6px 12px 6px 32px;
+        color: var(--body-fg, #444);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+    }
+    
+    .amount-col {
+        text-align: right !important;
+        font-variant-numeric: tabular-nums;
+        font-family: var(--font-family-monospace, monospace);
+        width: 25%;
+    }
+    
+    .subtotal-row td {
+        font-weight: 700;
+        padding: 8px 12px;
+        color: var(--body-fg, #333);
+        border-top: 1px solid var(--border-color, #ccc);
+        border-bottom: 1px solid var(--border-color, #eee);
+        background: rgba(0, 0, 0, 0.01);
+    }
+    
+    .section-total-row td {
+        font-weight: 700;
+        font-size: 1.05em;
+        padding: 14px 12px;
+        color: var(--body-fg, #111);
+        border-top: 1.5px solid var(--border-color, #999);
+        border-bottom: 1.5px solid var(--border-color, #999);
+        background: var(--darkened-bg, #fbfbfb);
+    }
+    
+    .summary-card {
+        background: var(--darkened-bg, #fcfcfc);
+        border: 1px solid var(--border-color, #ddd);
+        border-radius: 6px;
+        padding: 24px;
+        margin-top: 40px;
+    }
+    
+    .summary-card h3 {
+        margin: 0 0 15px 0;
+        font-size: 1.15em;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--body-fg, #333);
+        letter-spacing: 0.5px;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 12px;
+        font-size: 1em;
+        border-bottom: 1px solid var(--border-color, #eee);
+    }
+    
+    .summary-row.total-revenue-row {
+        color: var(--body-fg, #555);
+    }
+    
+    .summary-row.total-expense-row {
+        color: var(--body-fg, #555);
+        border-bottom: 1.5px solid var(--border-color, #999);
+    }
+    
+    .summary-row.net-income-row {
+        font-size: 1.25em;
+        font-weight: 700;
+        padding: 15px 12px;
+        border-bottom: 4px double var(--body-fg, #333);
+        margin-top: 5px;
+    }
+    
+    .summary-row.net-income-row.profit {
+        color: #2e5c1e;
+        border-bottom-color: #2e5c1e;
+    }
+    
+    .summary-row.net-income-row.loss {
+        color: #c55a11;
+        border-bottom-color: #c55a11;
+    }
+    
+    .summary-value {
+        font-variant-numeric: tabular-nums;
+        font-family: var(--font-family-monospace, monospace);
+        font-weight: 700;
+    }
+    
+    /* Dark mode styling overrides */
+    @media (prefers-color-scheme: dark) {
+        .report-card {
+            background: var(--body-bg, #1a1a1a);
+            border-color: var(--border-color, #2d2d2d);
+        }
+        .is-filter-form {
+            background: var(--darkened-bg, #222);
+            border-color: var(--border-color, #333);
+        }
+        .summary-card {
+            background: var(--darkened-bg, #222);
+            border-color: var(--border-color, #333);
+        }
+        .summary-row.net-income-row.profit {
+            color: #a3e28c;
+            border-bottom-color: #a3e28c;
+        }
+        .summary-row.net-income-row.loss {
+            color: #ff9d6c;
+            border-bottom-color: #ff9d6c;
+        }
+        .summary-row.net-income-row {
+            border-bottom-color: var(--body-fg, #eee);
+        }
+        .account-row td {
+            border-bottom-color: rgba(255, 255, 255, 0.02);
+        }
+    }
+</style>
+
+<div class="income-statement-container">
+
+    <form method="get" class="is-filter-form">
+        <label for="from_date">From Date:</label>
+        <input type="date" name="from_date" id="from_date" value="{{ from_date_val }}">
+
+        <label for="to_date">To Date:</label>
+        <input type="date" name="to_date" id="to_date" value="{{ to_date_val }}">
+
+        <button type="submit" class="button">
+            Generate Statement
+        </button>
+    </form>
+
+    <div class="report-card">
+        <div class="report-header">
+            <h2>Financial Statement</h2>
+            <h1>Income Statement</h1>
+            <p class="period-subtitle">
+                {% if from_date_val or to_date_val %}
+                    For the period {% if from_date_val %}from <strong>{{ from_date_val }}</strong>{% endif %} {% if to_date_val %}to <strong>{{ to_date_val }}</strong>{% endif %}
+                {% else %}
+                    For all transactions up to current date
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- REVENUES -->
+        <div class="section-title">Revenue</div>
+        <table class="statement-table">
+            <thead>
+                <tr>
+                    <th>Account / Category</th>
+                    <th class="amount-col">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group_item in revenues %}
+                    <tr class="group-row">
+                        <td>{{ group_item.group.code }} &mdash; {{ group_item.group.name }}</td>
+                        <td></td>
+                    </tr>
+                    {% for acc_item in group_item.accounts %}
+                        <tr class="account-row">
+                            <td>{{ acc_item.account.code }} &mdash; {{ acc_item.account.name }}</td>
+                            <td class="amount-col">
+                                {% if acc_item.balance < 0 %}
+                                    ({{ acc_item.balance|stringformat:"s"|slice:"1:" }})
+                                {% else %}
+                                    {{ acc_item.balance }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    <tr class="subtotal-row">
+                        <td style="text-align: right; font-style: italic; font-weight: normal; font-size: 0.9em; padding-right: 20px;">
+                            Subtotal {{ group_item.group.name }}
+                        </td>
+                        <td class="amount-col">
+                            {% if group_item.total < 0 %}
+                                ({{ group_item.total|stringformat:"s"|slice:"1:" }})
+                            {% else %}
+                                {{ group_item.total }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2" style="font-style: italic; padding: 15px; color: var(--body-quiet-color, #888);">
+                            No revenue transactions recorded for this period.
+                        </td>
+                    </tr>
+                {% endfor %}
+                <tr class="section-total-row">
+                    <td>Total Revenue</td>
+                    <td class="amount-col">
+                        {% if total_revenue < 0 %}
+                            ({{ total_revenue|stringformat:"s"|slice:"1:" }})
+                        {% else %}
+                            {{ total_revenue }}
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- EXPENSES -->
+        <div class="section-title">Expenses</div>
+        <table class="statement-table">
+            <thead>
+                <tr>
+                    <th>Account / Category</th>
+                    <th class="amount-col">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group_item in expenses %}
+                    <tr class="group-row">
+                        <td>{{ group_item.group.code }} &mdash; {{ group_item.group.name }}</td>
+                        <td></td>
+                    </tr>
+                    {% for acc_item in group_item.accounts %}
+                        <tr class="account-row">
+                            <td>{{ acc_item.account.code }} &mdash; {{ acc_item.account.name }}</td>
+                            <td class="amount-col">
+                                {% if acc_item.balance < 0 %}
+                                    ({{ acc_item.balance|stringformat:"s"|slice:"1:" }})
+                                {% else %}
+                                    {{ acc_item.balance }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    <tr class="subtotal-row">
+                        <td style="text-align: right; font-style: italic; font-weight: normal; font-size: 0.9em; padding-right: 20px;">
+                            Subtotal {{ group_item.group.name }}
+                        </td>
+                        <td class="amount-col">
+                            {% if group_item.total < 0 %}
+                                ({{ group_item.total|stringformat:"s"|slice:"1:" }})
+                            {% else %}
+                                {{ group_item.total }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2" style="font-style: italic; padding: 15px; color: var(--body-quiet-color, #888);">
+                            No expense transactions recorded for this period.
+                        </td>
+                    </tr>
+                {% endfor %}
+                <tr class="section-total-row">
+                    <td>Total Expenses</td>
+                    <td class="amount-col">
+                        {% if total_expense < 0 %}
+                            ({{ total_expense|stringformat:"s"|slice:"1:" }})
+                        {% else %}
+                            {{ total_expense }}
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- NET INCOME SUMMARY -->
+        <div class="summary-card">
+            <h3>Summary Overview</h3>
+            
+            <div class="summary-row total-revenue-row">
+                <span>Total Revenues</span>
+                <span class="summary-value">
+                    {% if total_revenue < 0 %}
+                        ({{ total_revenue|stringformat:"s"|slice:"1:" }})
+                    {% else %}
+                        {{ total_revenue }}
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="summary-row total-expense-row">
+                <span>Total Expenses</span>
+                <span class="summary-value">
+                    {% if total_expense < 0 %}
+                        ({{ total_expense|stringformat:"s"|slice:"1:" }})
+                    {% else %}
+                        {{ total_expense }}
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="summary-row net-income-row {% if net_income >= 0 %}profit{% else %}loss{% endif %}">
+                <span>Net {% if net_income >= 0 %}Income (Profit){% else %}Loss{% endif %}</span>
+                <span class="summary-value">
+                    {% if net_income < 0 %}
+                        ({{ net_income|stringformat:"s"|slice:"1:" }})
+                    {% else %}
+                        {{ net_income }}
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

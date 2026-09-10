@@ -36,6 +36,7 @@ class AccountAdminTests(TestCase):
         # Check that the sidebar is rendered and has the report links
         self.assertContains(response, "Balance Sheet")
         self.assertContains(response, "Ledger Report")
+        self.assertContains(response, "Income Statement")
         # Check that balance sheet is marked as current-model
         self.assertContains(response, 'class="model-balance-sheet current-model"')
 
@@ -47,8 +48,21 @@ class AccountAdminTests(TestCase):
         # Check that the sidebar is rendered and has the report links
         self.assertContains(response, "Balance Sheet")
         self.assertContains(response, "Ledger Report")
+        self.assertContains(response, "Income Statement")
         # Check that ledger report is marked as current-model
         self.assertContains(response, 'class="model-ledger-report current-model"')
+
+    def test_income_statement_view(self):
+        url = reverse("admin:account-income-statement")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "admin/accounts/income_statement.html")
+        # Check that the sidebar is rendered and has the report links
+        self.assertContains(response, "Balance Sheet")
+        self.assertContains(response, "Ledger Report")
+        self.assertContains(response, "Income Statement")
+        # Check that income statement is marked as current-model
+        self.assertContains(response, 'class="model-income-statement current-model"')
 
     def test_admin_index_contains_report_links(self):
         url = reverse("admin:index")
@@ -57,10 +71,13 @@ class AccountAdminTests(TestCase):
         # Check that the app list renders the custom reports
         bs_url = reverse("admin:account-balance-sheet")
         lr_url = reverse("admin:account-ledger-report")
+        is_url = reverse("admin:account-income-statement")
         self.assertContains(response, bs_url)
         self.assertContains(response, lr_url)
+        self.assertContains(response, is_url)
         self.assertContains(response, "Balance Sheet")
         self.assertContains(response, "Ledger Report")
+        self.assertContains(response, "Income Statement")
         
         # Check that the database backup button is present on the admin home page
         backup_url = reverse("database-backup")
@@ -464,6 +481,7 @@ class AccountAdminTests(TestCase):
         self.assertContains(response, "Balance Sheet")
         self.assertContains(response, "Ledger Report")
         self.assertContains(response, "Trial Balance")
+        self.assertContains(response, "Income Statement")
         # Check that trial balance is marked as current-model
         self.assertContains(response, 'class="model-trial-balance current-model"')
 
@@ -530,6 +548,115 @@ class AccountAdminTests(TestCase):
         equity_group = next(g for g in report if g["group"].group_type == "equity")
         self.assertEqual(equity_group["total_debit"], Decimal("0.00"))
         self.assertEqual(equity_group["total_credit"], Decimal("150.00"))
+
+    def test_income_statement_calculation(self):
+        from accounts.models import Journal, JournalLine
+        from datetime import date, timedelta
+        from decimal import Decimal
+
+        # Create Revenue Group and Account
+        rev_group = AccountGroup.objects.create(
+            code="4000",
+            name="Revenue Group",
+            group_type="revenue",
+            is_active=True
+        )
+        rev_acc = Account.objects.create(
+            group=rev_group,
+            code="4010",
+            name="Sales",
+            normal_balance="credit",
+            opening_balance=Decimal("0.00"),
+            is_active=True
+        )
+
+        # Create Expense Group and Account
+        exp_group = AccountGroup.objects.create(
+            code="5000",
+            name="Expense Group",
+            group_type="expense",
+            is_active=True
+        )
+        exp_acc = Account.objects.create(
+            group=exp_group,
+            code="5010",
+            name="Rent Expense",
+            normal_balance="debit",
+            opening_balance=Decimal("0.00"),
+            is_active=True
+        )
+
+        # Let's post journal entries. We need another asset or equity account for balancing.
+        # self.account is Cash, code "1010", debit normal balance.
+        # Sale transaction: Debit Cash 300.00, Credit Sales 300.00 (Date: Today)
+        journal1 = Journal.objects.create(date=date.today(), is_posted=True, reference="REV-1")
+        JournalLine.objects.create(
+            journal=journal1,
+            account=self.account,
+            entry_type="debit",
+            amount=Decimal("300.00")
+        )
+        JournalLine.objects.create(
+            journal=journal1,
+            account=rev_acc,
+            entry_type="credit",
+            amount=Decimal("300.00")
+        )
+
+        # Rent transaction: Debit Rent 100.00, Credit Cash 100.00 (Date: Today)
+        journal2 = Journal.objects.create(date=date.today(), is_posted=True, reference="EXP-1")
+        JournalLine.objects.create(
+            journal=journal2,
+            account=exp_acc,
+            entry_type="debit",
+            amount=Decimal("100.00")
+        )
+        JournalLine.objects.create(
+            journal=journal2,
+            account=self.account,
+            entry_type="credit",
+            amount=Decimal("100.00")
+        )
+
+        # Historical Sale transaction: Debit Cash 150.00, Credit Sales 150.00 (Date: 5 days ago)
+        past_date = date.today() - timedelta(days=5)
+        journal3 = Journal.objects.create(date=past_date, is_posted=True, reference="REV-OLD")
+        JournalLine.objects.create(
+            journal=journal3,
+            account=self.account,
+            entry_type="debit",
+            amount=Decimal("150.00")
+        )
+        JournalLine.objects.create(
+            journal=journal3,
+            account=rev_acc,
+            entry_type="credit",
+            amount=Decimal("150.00")
+        )
+
+        # 1. Generate Income Statement without date filters
+        url = reverse("admin:account-income-statement")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+        # Total sales = 300.00 + 150.00 = 450.00
+        # Total rent = 100.00
+        # Net Income = 350.00
+        self.assertEqual(response.context["total_revenue"], Decimal("450.00"))
+        self.assertEqual(response.context["total_expense"], Decimal("100.00"))
+        self.assertEqual(response.context["net_income"], Decimal("350.00"))
+
+        # 2. Generate Income Statement filtering for strictly Today
+        today_str = date.today().strftime("%Y-%m-%d")
+        response_filtered = self.client.get(url, {"from_date": today_str, "to_date": today_str})
+        self.assertEqual(response_filtered.status_code, 200)
+
+        # Total sales today = 300.00 (excludes historical 150.00)
+        # Total rent today = 100.00
+        # Net Income today = 200.00
+        self.assertEqual(response_filtered.context["total_revenue"], Decimal("300.00"))
+        self.assertEqual(response_filtered.context["total_expense"], Decimal("100.00"))
+        self.assertEqual(response_filtered.context["net_income"], Decimal("200.00"))
 
     def test_admin_branding_customization(self):
         from django.contrib import admin
