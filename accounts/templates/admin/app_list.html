@@ -48,6 +48,7 @@
           {% url 'admin:account-balance-sheet' as bs_url %}
           {% url 'admin:account-ledger-report' as lr_url %}
           {% url 'admin:account-trial-balance' as tb_url %}
+          {% url 'admin:account-income-statement' as is_url %}
           
           <tr class="model-balance-sheet{% if bs_url and bs_url in request.path %} current-model{% endif %}">
             <th scope="row" id="{{ app.app_label }}-balance-sheet">
@@ -79,6 +80,18 @@
                 <a href="{{ tb_url }}"{% if tb_url in request.path %} aria-current="page"{% endif %}>Trial Balance</a>
               {% else %}
                 Trial Balance
+              {% endif %}
+            </th>
+            <td></td>
+            <td></td>
+          </tr>
+
+          <tr class="model-income-statement{% if is_url and is_url in request.path %} current-model{% endif %}">
+            <th scope="row" id="{{ app.app_label }}-income-statement">
+              {% if is_url %}
+                <a href="{{ is_url }}"{% if is_url in request.path %} aria-current="page"{% endif %}>Income Statement</a>
+              {% else %}
+                Income Statement
               {% endif %}
             </th>
             <td></td>

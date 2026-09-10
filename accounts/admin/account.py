@@ -71,6 +71,11 @@ class AccountAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.trial_balance_view),
                 name="account-trial-balance",
             ),
+            path(
+                "income-statement/",
+                self.admin_site.admin_view(self.income_statement_view),
+                name="account-income-statement",
+            ),
         ]
         return custom_urls + urls
 
@@ -365,3 +370,107 @@ class AccountAdmin(admin.ModelAdmin):
             "to_date_val": to_date_str or "",
         }
         return render(request, "admin/accounts/trial_balance.html", context)
+
+    def income_statement_view(self, request):
+        from_date_str = request.GET.get("from_date")
+        to_date_str = request.GET.get("to_date")
+        
+        from datetime import datetime
+        from_date = None
+        to_date = None
+        
+        if from_date_str:
+            try:
+                from_date = datetime.strptime(from_date_str, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        if to_date_str:
+            try:
+                to_date = datetime.strptime(to_date_str, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+
+        accounts = Account.objects.filter(
+            group__group_type__in=[AccountGroup.GroupType.REVENUE, AccountGroup.GroupType.EXPENSE]
+        ).select_related("group").order_by("group__code", "code")
+
+        revenue_by_group = {}
+        expense_by_group = {}
+        total_revenue = Decimal("0.00")
+        total_expense = Decimal("0.00")
+
+        for account in accounts:
+            debit_filter = {"account": account, "journal__is_posted": True, "entry_type": "debit"}
+            credit_filter = {"account": account, "journal__is_posted": True, "entry_type": "credit"}
+            
+            if from_date:
+                debit_filter["journal__date__gte"] = from_date
+                credit_filter["journal__date__gte"] = from_date
+            if to_date:
+                debit_filter["journal__date__lte"] = to_date
+                credit_filter["journal__date__lte"] = to_date
+                
+            debit = JournalLine.objects.filter(**debit_filter).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+            credit = JournalLine.objects.filter(**credit_filter).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+            
+            if not from_date:
+                base_bal = account.opening_balance
+            else:
+                base_bal = Decimal("0.00")
+
+            if account.normal_balance == Account.NormalBalance.DEBIT:
+                balance = base_bal + debit - credit
+            else:
+                balance = base_bal + credit - debit
+
+            # Exclude accounts with zero balance from the Income Statement report
+            if balance == Decimal("0.00"):
+                continue
+
+            g_type = account.group.group_type
+            group_id = account.group.id
+
+            if g_type == AccountGroup.GroupType.REVENUE:
+                if group_id not in revenue_by_group:
+                    revenue_by_group[group_id] = {
+                        "group": account.group,
+                        "accounts": [],
+                        "total": Decimal("0.00"),
+                    }
+                revenue_by_group[group_id]["accounts"].append({
+                    "account": account,
+                    "balance": balance,
+                })
+                revenue_by_group[group_id]["total"] += balance
+                total_revenue += balance
+
+            elif g_type == AccountGroup.GroupType.EXPENSE:
+                if group_id not in expense_by_group:
+                    expense_by_group[group_id] = {
+                        "group": account.group,
+                        "accounts": [],
+                        "total": Decimal("0.00"),
+                    }
+                expense_by_group[group_id]["accounts"].append({
+                    "account": account,
+                    "balance": balance,
+                })
+                expense_by_group[group_id]["total"] += balance
+                total_expense += balance
+
+        revenues = list(revenue_by_group.values())
+        expenses = list(expense_by_group.values())
+        net_income = total_revenue - total_expense
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Income Statement",
+            "revenues": revenues,
+            "expenses": expenses,
+            "total_revenue": total_revenue,
+            "total_expense": total_expense,
+            "net_income": net_income,
+            "from_date_val": from_date_str or "",
+            "to_date_val": to_date_str or "",
+        }
+        return render(request, "admin/accounts/income_statement.html", context)
