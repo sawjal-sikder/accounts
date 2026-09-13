@@ -11,17 +11,18 @@ from config.pagination import CustomPagination
 class GroupListCreateView(generics.ListCreateAPIView):
 
     serializer_class = GroupSerializer
-
-    permission_classes = [
-        permissions.IsAuthenticated
-    ]
-
+    permission_classes = [permissions.IsAuthenticated]
     pagination_class = CustomPagination
 
     def get_queryset(self):
         """
-        Return only active groups
-        belonging to the logged-in user's organization.
+        Return groups belonging to the logged-in user's organization.
+
+        Optional filter:
+            ?is_active=true
+            ?is_active=false
+
+        If is_active is not provided, return both active and inactive groups.
         """
 
         organization = getattr(
@@ -33,15 +34,25 @@ class GroupListCreateView(generics.ListCreateAPIView):
         if not organization:
             return AccountGroup.objects.none()
 
-        return AccountGroup.objects.filter(
+        queryset = AccountGroup.objects.filter(
             organization=organization,
-            # is_active=True,
         ).select_related(
             "organization",
             "parent",
             "created_by",
             "updated_by",
         )
+
+        is_active = self.request.query_params.get("is_active")
+
+        if is_active is not None:
+            if is_active.lower() == "true":
+                queryset = queryset.filter(is_active=True)
+
+            elif is_active.lower() == "false":
+                queryset = queryset.filter(is_active=False)
+
+        return queryset
 
     def perform_create(self, serializer):
         """
