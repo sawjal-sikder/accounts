@@ -10,8 +10,8 @@ group_urlpatterns = [
 # urls for Accounts app
 from accounts.views.account.account import AccountListCreateView, AccountRetrieveUpdateDestroyView
 account_urlpatterns = [
-    path('accounts/', AccountListCreateView.as_view(), name='account-list-create'),
-    path('accounts/<int:pk>/', AccountRetrieveUpdateDestroyView.as_view(), name='account-retrieve-update-destroy'),
+    path('chart-of-accounts/', AccountListCreateView.as_view(), name='account-list-create'),
+    path('chart-of-accounts/<int:pk>/', AccountRetrieveUpdateDestroyView.as_view(), name='account-retrieve-update-destroy'),
 ]
 
 
