@@ -10,7 +10,7 @@ class AccountGroup(models.Model):
         LIABILITY = "liability", "Liability"
         EQUITY = "equity", "Equity"
         REVENUE = "revenue", "Revenue"
-        COST_OF_GOODS_SOLD = "cogs", "Cost of Goods Sold"
+        COGS = "cogs", "Cost of Goods Sold"
         EXPENSE = "expense", "Expense"
 
     organization = models.ForeignKey(

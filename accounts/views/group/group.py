@@ -35,7 +35,7 @@ class GroupListCreateView(generics.ListCreateAPIView):
 
         return AccountGroup.objects.filter(
             organization=organization,
-            is_active=True,
+            # is_active=True,
         ).select_related(
             "organization",
             "parent",
@@ -78,7 +78,7 @@ class GroupRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return AccountGroup.objects.filter(
-            is_active=True,
+            # is_active=True,
             organization=self.request.user.organization
         )
     

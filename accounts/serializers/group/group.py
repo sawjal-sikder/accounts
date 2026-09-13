@@ -4,13 +4,13 @@ from accounts.models import AccountGroup
 
 
 class GroupSerializer(serializers.ModelSerializer):
+
     organization = serializers.PrimaryKeyRelatedField(
         read_only=True
     )
 
     class Meta:
         model = AccountGroup
-
         fields = [
             "id",
             "organization",
@@ -37,8 +37,11 @@ class GroupSerializer(serializers.ModelSerializer):
 
     def validate_code(self, value):
         """
-        Make sure the group code is unique
+        Check whether the group code already exists
         within the current user's organization.
+
+        If it exists, return the complete existing
+        group details in the validation error.
         """
 
         request = self.context.get("request")
@@ -68,8 +71,19 @@ class GroupSerializer(serializers.ModelSerializer):
                 pk=self.instance.pk
             )
 
-        if queryset.exists():
-            queryset.update(is_active=True)
+        existing_group = queryset.first()
+
+        if existing_group:
+            raise serializers.ValidationError({
+                "message": (
+                    "A group with this code already exists "
+                    "in your organization."
+                ),
+                "existing_group": GroupSerializer(
+                    existing_group,
+                    context=self.context,
+                ).data,
+            })
 
         return value
 
@@ -121,7 +135,11 @@ class GroupSerializer(serializers.ModelSerializer):
         if parent:
             group_type = attrs.get(
                 "group_type",
-                getattr(self.instance, "group_type", None),
+                getattr(
+                    self.instance,
+                    "group_type",
+                    None,
+                ),
             )
 
             if parent.group_type != group_type:
