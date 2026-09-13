@@ -65,6 +65,11 @@ db.sqlite3-wal
 staticfiles/
 media/
 
+# Environment files
+.env
+.env.*
+!.env.example
+
 # Virtual Environments
 venv/
 env/
