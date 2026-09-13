@@ -69,9 +69,7 @@ class GroupSerializer(serializers.ModelSerializer):
             )
 
         if queryset.exists():
-            raise serializers.ValidationError(
-                "This group code already exists in your organization."
-            )
+            queryset.update(is_active=True)
 
         return value
 
