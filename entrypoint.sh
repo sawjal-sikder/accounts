@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 if [ "$DB_ENGINE" = "django.db.backends.mysql" ]; then
     echo "Waiting for mysql..."
