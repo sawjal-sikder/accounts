@@ -1,3 +1,5 @@
+from decimal import Decimal
+from django.db.models import Sum
 from rest_framework import serializers
 from accounts.models.journal import Journal
 from accounts.serializers.journalline.serializers import JournalLineSerializer
@@ -31,6 +33,8 @@ class JournalSerializer(serializers.ModelSerializer):
         "transfer": "TRF",
     }
 
+    amount = serializers.SerializerMethodField()
+    
     class Meta:
         model = Journal
         fields = [
@@ -38,6 +42,7 @@ class JournalSerializer(serializers.ModelSerializer):
             "date",
             "reference",
             "type_of_journal",
+            "amount",
             "description",
             "is_posted",
             "is_active",
@@ -55,6 +60,15 @@ class JournalSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+        
+    def get_amount(self, obj):
+        total_debit = obj.lines.filter(
+            entry_type="debit"
+        ).aggregate(
+            total=Sum("amount")
+        )["total"]
+
+        return total_debit or Decimal("0.00")
 
     def create(self, validated_data):
         journal = Journal.objects.create(**validated_data)
