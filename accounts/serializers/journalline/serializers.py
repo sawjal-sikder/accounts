@@ -6,7 +6,7 @@ class JournalLineSerializer(serializers.ModelSerializer):
         model = JournalLine
         fields = [
             'id',
-            # 'journal',
+            'journal',
             'account',
             'entry_type',
             'amount',
