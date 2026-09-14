@@ -13,6 +13,7 @@ class AccountSerializer(serializers.ModelSerializer):
         source="group.organization.name",
         read_only=True
     )
+    current_balance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     class Meta:
         model = Account
@@ -27,6 +28,7 @@ class AccountSerializer(serializers.ModelSerializer):
             'organization_name',
             'normal_balance',
             'opening_balance',
+            'current_balance',
             'is_active',
             'created_by',
             'updated_by',
@@ -40,3 +42,6 @@ class AccountSerializer(serializers.ModelSerializer):
             if value.organization != request.user.organization:
                 raise serializers.ValidationError("Group must belong to your organization.")
         return value
+    
+    def get_current_balance(self, obj):
+        return obj.current_balance()
