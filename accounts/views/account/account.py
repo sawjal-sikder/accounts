@@ -14,10 +14,20 @@ class AccountListCreateView(generics.ListCreateAPIView):
     pagination_class = CustomPagination
     
     def get_queryset(self):
-        return Account.objects.filter(
-            is_active=True,
+        queryset = Account.objects.filter(
+            # is_active=True,
             group__organization=self.request.user.organization
         ).select_related("group__organization")
+        
+        is_active = self.request.query_params.get("is_active")
+        
+        if is_active is not None:
+            if is_active.lower() == "true":
+                queryset = queryset.filter(is_active=True)
+            elif is_active.lower() == "false":
+                queryset = queryset.filter(is_active=False)
+                
+        return queryset
     
     def perform_create(self, serializer):
         serializer.save(
@@ -33,10 +43,12 @@ class AccountRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Account.objects.filter(
-            is_active=True,
+        queryset = Account.objects.filter(
+            # is_active=True,
             group__organization=self.request.user.organization
         ).select_related("group__organization")
+        
+        return queryset
 
     def perform_destroy(self, instance):
         instance.is_active = False
