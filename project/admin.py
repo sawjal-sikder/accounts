@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
@@ -170,3 +171,18 @@ class ProjectBillingAdmin(admin.ModelAdmin):
     list_display = ("project", "billing_date", "reference_number", "order_id", "amount", "total_billed_amount")
     list_filter = ("project", "project__name")
     search_fields = ("project__name", "reference_number", "order_id")
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "project":
+            obj_id = request.resolver_match.kwargs.get("object_id") if request.resolver_match else None
+            if obj_id:
+                try:
+                    current_billing = ProjectBilling.objects.get(pk=obj_id)
+                    kwargs["queryset"] = Project.objects.filter(
+                        Q(is_active=True) | Q(pk=current_billing.project_id)
+                    )
+                except ProjectBilling.DoesNotExist:
+                    kwargs["queryset"] = Project.objects.filter(is_active=True)
+            else:
+                kwargs["queryset"] = Project.objects.filter(is_active=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
