@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="{% url 'admin:projectbilling-quarterly-report' %}" class="historylink" style="background:#2563eb; color:#ffffff; font-weight:600; padding:6px 14px; border-radius:4px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+      📊 Quarterly Report
+    </a>
+  </li>
+  {{ block.super }}
+{% endblock %}

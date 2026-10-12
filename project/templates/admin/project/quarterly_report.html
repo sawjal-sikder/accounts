@@ -1,0 +1,278 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Quarterly Billing Report | {{ site_title|default:"Django site admin" }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label='project' %}">Project</a>
+  &rsaquo; <a href="{% url 'admin:project_projectbilling_changelist' %}">Project Billings</a>
+  &rsaquo; Quarterly Billing Report
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="quarterly-report-container" style="max-width: 1200px; margin: 0 auto; padding-bottom: 40px;">
+
+  <!-- Header Title & Actions -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: var(--body-fg, #1e293b);">
+        📊 Project Billing Quarterly Report
+      </h1>
+      <p style="margin: 4px 0 0; color: var(--body-quiet-color, #64748b); font-size: 13px;">
+        Filter and review quarterly billing totals, project breakdown, and net contributions.
+      </p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button type="button" onclick="window.print()" class="button" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: #475569; color: #fff; border-radius: 4px; font-weight: 600; cursor: pointer; border: none;">
+        🖨️ Print Report
+      </button>
+      <a href="{% url 'admin:project_projectbilling_changelist' %}" class="button" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: #2563eb; color: #fff; border-radius: 4px; font-weight: 600; text-decoration: none;">
+        &larr; Back to Billings
+      </a>
+    </div>
+  </div>
+
+  <!-- Quarter Selection Header Form -->
+  <div style="background: var(--body-bg, #ffffff); border: 1px solid var(--hairline-color, #e2e8f0); border-radius: 8px; padding: 18px 22px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <form method="get" style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap;">
+      
+      <!-- Quarter Select Field -->
+      <div>
+        <label for="quarter" style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--body-fg, #334155);">
+          Select Quarter:
+        </label>
+        <select name="quarter" id="quarter" style="padding: 7px 12px; font-size: 13px; border-radius: 6px; border: 1px solid #cbd5e1; min-width: 180px; background: var(--body-bg, #fff); color: var(--body-fg, #1e293b);">
+          <option value="Q1" {% if selected_quarter == "Q1" %}selected{% endif %}>Jan - Mar (Q1)</option>
+          <option value="Q2" {% if selected_quarter == "Q2" %}selected{% endif %}>Apr - Jun (Q2)</option>
+          <option value="Q3" {% if selected_quarter == "Q3" %}selected{% endif %}>Jul - Sep (Q3)</option>
+          <option value="Q4" {% if selected_quarter == "Q4" %}selected{% endif %}>Oct - Dec (Q4)</option>
+        </select>
+      </div>
+
+      <!-- Year Select Field -->
+      <div>
+        <label for="year" style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--body-fg, #334155);">
+          Select Year:
+        </label>
+        <select name="year" id="year" style="padding: 7px 12px; font-size: 13px; border-radius: 6px; border: 1px solid #cbd5e1; min-width: 120px; background: var(--body-bg, #fff); color: var(--body-fg, #1e293b);">
+          {% for y in available_years %}
+            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Project Filter (Optional) -->
+      <div>
+        <label for="project" style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--body-fg, #334155);">
+          Project (Optional):
+        </label>
+        <select name="project" id="project" style="padding: 7px 12px; font-size: 13px; border-radius: 6px; border: 1px solid #cbd5e1; min-width: 180px; background: var(--body-bg, #fff); color: var(--body-fg, #1e293b);">
+          <option value="">All Projects</option>
+          {% for p in projects %}
+            <option value="{{ p.id }}" {% if selected_project_id == p.id %}selected{% endif %}>
+              {{ p.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Submit Button -->
+      <div>
+        <button type="submit" class="button default" style="padding: 8px 18px; font-size: 13px; font-weight: 600; border-radius: 6px; background: #2563eb; color: #ffffff; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          Submit / View Report
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- KPI Summary Badges -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 25px;">
+    
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 18px;">
+      <div style="font-size: 12px; font-weight: 600; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px;">
+        Selected Period
+      </div>
+      <div style="font-size: 18px; font-weight: 700; color: #1e3a8a; margin-top: 4px;">
+        {{ quarter_label }} {{ selected_year }}
+      </div>
+      <div style="font-size: 11px; color: #3b82f6; margin-top: 2px;">
+        {{ start_date|date:"M d, Y" }} &ndash; {{ end_date|date:"M d, Y" }}
+      </div>
+    </div>
+
+    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px 18px;">
+      <div style="font-size: 12px; font-weight: 600; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">
+        Total Billed Amount
+      </div>
+      <div style="font-size: 22px; font-weight: 700; color: #15803d; margin-top: 4px;">
+        ${{ total_billed|floatformat:2 }}
+      </div>
+      <div style="font-size: 11px; color: #22c55e; margin-top: 2px;">
+        Across {{ total_count }} billing transaction{{ total_count|pluralize }}
+      </div>
+    </div>
+
+    <div style="background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 14px 18px;">
+      <div style="font-size: 12px; font-weight: 600; color: #6b21a8; text-transform: uppercase; letter-spacing: 0.5px;">
+        Total Contribution
+      </div>
+      <div style="font-size: 22px; font-weight: 700; color: #7e22ce; margin-top: 4px;">
+        ${{ total_contribution|floatformat:2 }}
+      </div>
+      <div style="font-size: 11px; color: #a855f7; margin-top: 2px;">
+        Net calculated contribution
+      </div>
+    </div>
+
+    <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 14px 18px;">
+      <div style="font-size: 12px; font-weight: 600; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">
+        Projects Billed
+      </div>
+      <div style="font-size: 22px; font-weight: 700; color: #b45309; margin-top: 4px;">
+        {{ project_summary|length }}
+      </div>
+      <div style="font-size: 11px; color: #f59e0b; margin-top: 2px;">
+        With billing activity in quarter
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Section 1: Project Breakdown Summary -->
+  <div style="background: var(--body-bg, #ffffff); border: 1px solid var(--hairline-color, #e2e8f0); border-radius: 8px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="padding: 12px 18px; background: var(--header-bg, #f8fafc); border-bottom: 1px solid var(--hairline-color, #e2e8f0); display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--body-fg, #1e293b);">
+        📌 Summary by Project ({{ quarter_label }} {{ selected_year }})
+      </h3>
+    </div>
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+        <thead>
+          <tr style="background: var(--header-bg, #f1f5f9); color: var(--header-color, #475569); border-bottom: 1px solid #cbd5e1;">
+            <th style="padding: 10px 14px;">Project Name</th>
+            <th style="padding: 10px 14px; text-align: center;">Transactions</th>
+            <th style="padding: 10px 14px; text-align: right;">Total Billed</th>
+            <th style="padding: 10px 14px; text-align: right;">Contribution %</th>
+            <th style="padding: 10px 14px; text-align: right;">Contribution Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in project_summary %}
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 10px 14px; font-weight: 600;">
+              <a href="{% url 'admin:project_project_change' p.id %}" target="_blank" style="color: #2563eb; text-decoration: none;">
+                {{ p.name }}
+              </a>
+            </td>
+            <td style="padding: 10px 14px; text-align: center;">{{ p.count }}</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 600;">${{ p.total_amount|floatformat:2 }}</td>
+            <td style="padding: 10px 14px; text-align: right;">{{ p.percentage|floatformat:2 }}%</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 600; color: #7e22ce;">${{ p.contribution_amount|floatformat:2 }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" style="padding: 24px; text-align: center; color: #94a3b8; font-style: italic;">
+              No billing records found for {{ quarter_label }} {{ selected_year }}.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        {% if project_summary %}
+        <tfoot>
+          <tr style="background: var(--header-bg, #f8fafc); font-weight: 700; border-top: 2px solid #cbd5e1;">
+            <td style="padding: 10px 14px;">Grand Total</td>
+            <td style="padding: 10px 14px; text-align: center;">{{ total_count }}</td>
+            <td style="padding: 10px 14px; text-align: right; color: #15803d;">${{ total_billed|floatformat:2 }}</td>
+            <td style="padding: 10px 14px; text-align: right;">-</td>
+            <td style="padding: 10px 14px; text-align: right; color: #7e22ce;">${{ total_contribution|floatformat:2 }}</td>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+
+  <!-- Section 2: Detailed Billing Transactions -->
+  <div style="background: var(--body-bg, #ffffff); border: 1px solid var(--hairline-color, #e2e8f0); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="padding: 12px 18px; background: var(--header-bg, #f8fafc); border-bottom: 1px solid var(--hairline-color, #e2e8f0); display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--body-fg, #1e293b);">
+        📝 Detailed Billing Records ({{ quarter_label }} {{ selected_year }})
+      </h3>
+      <span style="font-size: 12px; color: #64748b;">{{ billings|length }} record{{ billings|length|pluralize }}</span>
+    </div>
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+        <thead>
+          <tr style="background: var(--header-bg, #f1f5f9); color: var(--header-color, #475569); border-bottom: 1px solid #cbd5e1;">
+            <th style="padding: 10px 14px;">#</th>
+            <th style="padding: 10px 14px;">Date</th>
+            <th style="padding: 10px 14px;">Project</th>
+            <th style="padding: 10px 14px;">Reference No</th>
+            <th style="padding: 10px 14px;">Order ID</th>
+            <th style="padding: 10px 14px; text-align: right;">Amount</th>
+            <th style="padding: 10px 14px; text-align: right;">Contrib Amount</th>
+            <th style="padding: 10px 14px; text-align: center;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in billings %}
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 10px 14px;">{{ forloop.counter }}</td>
+            <td style="padding: 10px 14px;">{{ b.billing_date|date:"Y-m-d" }}</td>
+            <td style="padding: 10px 14px; font-weight: 600;">
+              <a href="{% url 'admin:project_project_change' b.project.id %}" target="_blank" style="color: #2563eb; text-decoration: none;">
+                {{ b.project.name }}
+              </a>
+            </td>
+            <td style="padding: 10px 14px;">{{ b.reference_number|default:"-" }}</td>
+            <td style="padding: 10px 14px;">{{ b.order_id|default:"-" }}</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 600;">${{ b.amount|floatformat:2 }}</td>
+            <td style="padding: 10px 14px; text-align: right; color: #7e22ce; font-weight: 600;">${{ b.calc_contribution|floatformat:2 }}</td>
+            <td style="padding: 10px 14px; text-align: center;">
+              <a href="{% url 'admin:project_projectbilling_change' b.id %}" target="_blank" style="color: #2563eb; text-decoration: underline; font-size: 12px;">
+                Edit
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="padding: 24px; text-align: center; color: #94a3b8; font-style: italic;">
+              No billing transactions found for {{ quarter_label }} {{ selected_year }}.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        {% if billings %}
+        <tfoot>
+          <tr style="background: var(--header-bg, #f8fafc); font-weight: 700; border-top: 2px solid #cbd5e1;">
+            <td colspan="5" style="padding: 10px 14px; text-align: right;">Grand Total:</td>
+            <td style="padding: 10px 14px; text-align: right; color: #15803d;">${{ total_billed|floatformat:2 }}</td>
+            <td style="padding: 10px 14px; text-align: right; color: #7e22ce;">${{ total_contribution|floatformat:2 }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<style>
+@media print {
+  #header, .breadcrumbs, form, button, .button, a[href*="change"] {
+    display: none !important;
+  }
+  .quarterly-report-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+  table {
+    font-size: 11px !important;
+  }
+}
+</style>
+{% endblock %}

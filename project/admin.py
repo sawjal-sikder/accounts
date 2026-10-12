@@ -1,6 +1,8 @@
+from datetime import date
 from django.contrib import admin
 from django.db.models import Q
-from django.urls import reverse
+from django.shortcuts import render
+from django.urls import path, reverse
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from project.models import Project, ProjectBilling
@@ -168,9 +170,116 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(ProjectBilling)
 class ProjectBillingAdmin(admin.ModelAdmin):
+    change_list_template = "admin/project/projectbilling/change_list.html"
     list_display = ("project", "billing_date", "reference_number", "order_id", "amount", "total_billed_amount")
     list_filter = ("project", "project__name")
     search_fields = ("project__name", "reference_number", "order_id")
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "quarterly-report/",
+                self.admin_site.admin_view(self.quarterly_report_view),
+                name="projectbilling-quarterly-report",
+            ),
+        ]
+        return custom_urls + urls
+
+    def quarterly_report_view(self, request):
+        today = date.today()
+        billing_years = set(
+            ProjectBilling.objects.dates("billing_date", "year").values_list("billing_date__year", flat=True)
+        )
+        billing_years.add(today.year)
+        available_years = sorted(list(billing_years), reverse=True)
+
+        selected_year_str = request.GET.get("year")
+        try:
+            selected_year = int(selected_year_str) if selected_year_str else today.year
+        except (ValueError, TypeError):
+            selected_year = today.year
+
+        current_quarter = f"Q{(today.month - 1) // 3 + 1}"
+        selected_quarter = request.GET.get("quarter", current_quarter)
+        if selected_quarter not in ["Q1", "Q2", "Q3", "Q4"]:
+            selected_quarter = current_quarter
+
+        quarter_map = {
+            "Q1": ("Jan - Mar", date(selected_year, 1, 1), date(selected_year, 3, 31)),
+            "Q2": ("Apr - Jun", date(selected_year, 4, 1), date(selected_year, 6, 30)),
+            "Q3": ("Jul - Sep", date(selected_year, 7, 1), date(selected_year, 9, 30)),
+            "Q4": ("Oct - Dec", date(selected_year, 10, 1), date(selected_year, 12, 31)),
+        }
+
+        quarter_label, start_date, end_date = quarter_map[selected_quarter]
+
+        billings_qs = ProjectBilling.objects.filter(
+            billing_date__range=[start_date, end_date]
+        ).select_related("project").order_by("-billing_date", "-id")
+
+        selected_project_id = request.GET.get("project")
+        if selected_project_id:
+            try:
+                selected_project_id = int(selected_project_id)
+                billings_qs = billings_qs.filter(project_id=selected_project_id)
+            except (ValueError, TypeError):
+                selected_project_id = None
+
+        billings = list(billings_qs)
+        total_billed = sum((b.amount for b in billings), 0)
+
+        project_summary_dict = {}
+        total_contribution = 0
+
+        for b in billings:
+            p = b.project
+            if b.amount > 0:
+                charge = (b.amount / 100) * 20
+                out_charge = b.amount - charge
+                b_contrib = round((out_charge / 100) * (p.contribution_percentage or 0), 2)
+            else:
+                b_contrib = 0
+
+            b.calc_contribution = b_contrib
+            total_contribution += b_contrib
+
+            if p.id not in project_summary_dict:
+                project_summary_dict[p.id] = {
+                    "id": p.id,
+                    "name": p.name,
+                    "count": 0,
+                    "total_amount": 0,
+                    "percentage": p.contribution_percentage or 0,
+                    "contribution_amount": 0,
+                }
+            project_summary_dict[p.id]["count"] += 1
+            project_summary_dict[p.id]["total_amount"] += b.amount
+            project_summary_dict[p.id]["contribution_amount"] += b_contrib
+
+        project_summary = list(project_summary_dict.values())
+        project_summary.sort(key=lambda x: x["total_amount"], reverse=True)
+
+        projects = Project.objects.filter(is_active=True).order_by("name")
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": f"Quarterly Billing Report ({quarter_label} {selected_year})",
+            "selected_quarter": selected_quarter,
+            "quarter_label": quarter_label,
+            "selected_year": selected_year,
+            "available_years": available_years,
+            "selected_project_id": selected_project_id,
+            "projects": projects,
+            "start_date": start_date,
+            "end_date": end_date,
+            "billings": billings,
+            "project_summary": project_summary,
+            "total_billed": total_billed,
+            "total_contribution": total_contribution,
+            "total_count": len(billings),
+        }
+        return render(request, "admin/project/quarterly_report.html", context)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "project":

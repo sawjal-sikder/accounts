@@ -85,6 +85,21 @@
             <td></td>
           </tr>
         {% endif %}
+
+        {% if app.app_label == 'project' %}
+          {% url 'admin:projectbilling-quarterly-report' as qr_url %}
+          <tr class="model-quarterly-report{% if qr_url and qr_url in request.path %} current-model{% endif %}">
+            <th scope="row" id="{{ app.app_label }}-quarterly-report">
+              {% if qr_url %}
+                <a href="{{ qr_url }}"{% if qr_url in request.path %} aria-current="page"{% endif %}>Quarterly Billing Report</a>
+              {% else %}
+                Quarterly Billing Report
+              {% endif %}
+            </th>
+            <td></td>
+            <td></td>
+          </tr>
+        {% endif %}
       </table>
     </div>
   {% endfor %}
