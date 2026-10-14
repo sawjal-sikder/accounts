@@ -5,20 +5,6 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static "admin/css/dashboard.css" %}">
 <style>
-  /* Global Dark Theme Settings */
-  :root {
-    --body-bg: #121212;
-    --body-fg: #ffffff;
-    --border-color: #2e2e2e;
-    --primary: #3b82f6;
-    --darkened-bg: #18181b;
-  }
-
-  body.dashboard {
-    background: #121212 !important;
-    color: #ffffff !important;
-  }
-
   /* Modern Dashboard Layout */
   .dashboard-grid {
     display: flex;
@@ -29,26 +15,28 @@
     width: 100%;
   }
 
-  .dashboard-grid .reports-container {
-    flex: 1 1 52%;
+  .dashboard-grid .app-list-container {
+    flex: 1 1 55%;
     min-width: 320px;
-    background: #1e1e1e;
-    border: 1px solid #2e2e2e;
-    border-radius: 12px;
-    padding: 24px;
-    box-sizing: border-box;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
   }
 
   .dashboard-grid .analytics-sidebar {
-    flex: 1 1 48%;
+    flex: 1 1 45%;
     min-width: 300px;
-    background: #1e1e1e;
-    border: 1px solid #2e2e2e;
-    border-radius: 12px;
+    background: var(--body-bg, #ffffff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
     padding: 24px;
     box-sizing: border-box;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Dark mode overrides (Django 4.0+) */
+  @media (prefers-color-scheme: dark) {
+    .dashboard-grid .analytics-sidebar {
+      background: var(--body-bg, #1e1e1e);
+      border-color: var(--border-color, #333333);
+    }
   }
 
   /* Responsive Stacking */
@@ -56,121 +44,18 @@
     .dashboard-grid {
       flex-direction: column;
     }
-    .dashboard-grid .reports-container,
+    .dashboard-grid .app-list-container,
     .dashboard-grid .analytics-sidebar {
       flex: 1 1 100%;
       width: 100%;
     }
   }
 
-  /* Section Header */
-  .section-header {
-    margin-bottom: 20px;
-    border-bottom: 2px solid #2e2e2e;
-    padding-bottom: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .section-header h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .section-subtitle {
-    font-size: 0.85rem;
-    color: #a1a1aa;
-    margin-top: 4px;
-    margin-bottom: 0;
-  }
-
-  /* Reports List & Cards */
-  .reports-list {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    margin-top: 16px;
-  }
-
-  .report-card {
-    background: #27272a;
-    border: 1px solid #3f3f46;
-    border-radius: 8px;
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    gap: 16px;
-  }
-
-  .report-card:hover {
-    background: #323238;
-    border-color: #3b82f6;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  }
-
-  .report-info {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .report-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    flex-shrink: 0;
-  }
-
-  .icon-blue { background: #1e3a8a; color: #60a5fa; }
-  .icon-emerald { background: #064e3b; color: #34d399; }
-  .icon-amber { background: #78350f; color: #fbbf24; }
-  .icon-purple { background: #581c87; color: #c084fc; }
-  .icon-indigo { background: #312e81; color: #818cf8; }
-
-  .report-details h3 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #ffffff;
-  }
-
-  .report-details p {
-    margin: 3px 0 0 0;
-    font-size: 0.82rem;
-    color: #a1a1aa;
-  }
-
-  .report-arrow {
-    color: #60a5fa;
-    font-weight: 600;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
   /* Typography & Widgets */
   .analytics-header {
     margin-bottom: 20px;
-    border-bottom: 2px solid #2e2e2e;
-    padding-bottom: 12px;
+    border-bottom: 2px solid var(--primary, #79aec8);
+    padding-bottom: 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -180,16 +65,13 @@
 
   .analytics-header h2 {
     margin: 0;
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--body-fg, #333);
   }
 
   .badge-fallback {
-    background-color: #f59e0b;
+    background-color: #f57c00;
     color: white;
     padding: 3px 8px;
     border-radius: 12px;
@@ -200,7 +82,7 @@
   }
 
   .badge-today {
-    background-color: #2563eb;
+    background-color: var(--primary, #79aec8);
     color: white;
     padding: 3px 8px;
     border-radius: 12px;
@@ -219,41 +101,40 @@
   }
 
   .stat-card {
-    background: #27272a;
-    border: 1px solid #3f3f46;
-    border-radius: 8px;
+    background: var(--darkened-bg, #f8f9fa);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 6px;
     padding: 12px;
     text-align: center;
   }
 
   .stat-card .stat-label {
-    font-size: 0.75rem;
-    color: #a1a1aa;
+    font-size: 0.8rem;
+    color: var(--body-quiet-color, #666);
     margin-bottom: 6px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-weight: 600;
   }
 
   .stat-card .stat-value {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--body-fg, #111);
   }
 
   .stat-card.primary-stat .stat-value {
-    color: #60a5fa;
+    color: var(--primary, #79aec8);
   }
 
   /* View Toggle Buttons */
   .toggle-container {
     display: flex;
     justify-content: center;
-    background: #27272a;
-    border-radius: 8px;
+    background: var(--darkened-bg, #f1f3f4);
+    border-radius: 6px;
     padding: 4px;
     margin-bottom: 20px;
-    border: 1px solid #3f3f46;
+    border: 1px solid var(--border-color, #e0e0e0);
   }
 
   .toggle-btn {
@@ -261,18 +142,18 @@
     background: transparent;
     border: none;
     padding: 8px 12px;
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: #a1a1aa;
+    color: var(--body-quiet-color, #555);
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: 4px;
     transition: all 0.2s ease;
   }
 
   .toggle-btn.active {
-    background: #2563eb;
+    background: var(--primary, #79aec8);
     color: #ffffff !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
   /* Chart & Legend Styling */
@@ -286,7 +167,7 @@
   }
 
   .no-chart-library-warning {
-    color: #a1a1aa;
+    color: var(--body-quiet-color, #666);
     font-style: italic;
     font-size: 0.85rem;
     margin-top: 5px;
@@ -297,34 +178,32 @@
   .breakdown-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     margin-top: 15px;
   }
 
   .breakdown-table th,
   .breakdown-table td {
-    padding: 9px 12px;
+    padding: 8px 12px;
     text-align: left;
-    border-bottom: 1px solid #2e2e2e;
+    border-bottom: 1px solid var(--border-color, #eee);
   }
 
   .breakdown-table th {
     font-weight: 600;
-    color: #ffffff;
-    background: #27272a;
-    border-bottom: 1px solid #3f3f46;
+    color: var(--body-quiet-color, #555);
+    background: var(--darkened-bg, #fcfcfc);
   }
 
   .breakdown-table td.amount {
     text-align: right;
     font-family: monospace;
-    font-weight: 600;
-    color: #ffffff;
+    font-weight: bold;
   }
 
   .breakdown-table td.percent {
     text-align: right;
-    color: #a1a1aa;
+    color: var(--body-quiet-color, #777);
   }
 
   .color-dot {
@@ -340,26 +219,25 @@
   .empty-state {
     text-align: center;
     padding: 40px 20px;
-    color: #a1a1aa;
+    color: var(--body-quiet-color, #777);
   }
 
   .empty-state-icon {
     font-size: 3rem;
     margin-bottom: 15px;
-    color: #52525b;
+    color: var(--border-color, #ccc);
   }
 
   .empty-state p {
-    font-size: 1rem;
+    font-size: 1.05rem;
     margin-bottom: 20px;
-    color: #a1a1aa;
   }
 
   .empty-state .button {
-    background: #2563eb;
+    background: var(--primary, #79aec8);
     color: white;
     padding: 8px 16px;
-    border-radius: 6px;
+    border-radius: 4px;
     text-decoration: none;
     font-weight: bold;
   }
@@ -368,91 +246,8 @@
     opacity: 0.9;
   }
 
-  .backup-button {
-    background: #2563eb;
-    color: #ffffff !important;
-    padding: 7px 14px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.85rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: background 0.2s;
-  }
-
   .backup-button:hover {
-    background: #1d4ed8;
-    color: #ffffff !important;
-  }
-
-  /* Dark Theme for Jazzmin Sidebar */
-  #jazzy-sidebar,
-  #jazzy-sidebar[data-bs-theme="dark"] {
-    background-color: #18181b !important;
-    border-right: 1px solid #2e2e2e !important;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4) !important;
-  }
-
-  #jazzy-sidebar .sidebar-brand,
-  #jazzy-sidebar .brand-link {
-    background-color: #18181b !important;
-    color: #ffffff !important;
-    border-bottom: 1px solid #2e2e2e !important;
-  }
-
-  #jazzy-sidebar .brand-text {
-    color: #ffffff !important;
-    font-weight: 700 !important;
-  }
-
-  #jazzy-sidebar .user-panel {
-    border-bottom: 1px solid #2e2e2e !important;
-  }
-
-  #jazzy-sidebar .user-panel .info a {
-    color: #ffffff !important;
-    font-weight: 600 !important;
-  }
-
-  #jazzy-sidebar .nav-sidebar .nav-item .nav-link {
-    color: #d4d4d8 !important;
-    border-radius: 6px;
-    margin: 2px 8px;
-    padding: 8px 12px;
-  }
-
-  #jazzy-sidebar .nav-sidebar .nav-item .nav-link i {
-    color: #a1a1aa;
-  }
-
-  #jazzy-sidebar .nav-sidebar .nav-item .nav-link:hover {
-    background-color: #27272a !important;
-    color: #ffffff !important;
-  }
-
-  #jazzy-sidebar .nav-sidebar .nav-item .nav-link:hover i {
-    color: #60a5fa;
-  }
-
-  #jazzy-sidebar .nav-sidebar .nav-item .nav-link.active {
-    background-color: #2563eb !important;
-    color: #ffffff !important;
-    font-weight: 600 !important;
-  }
-
-  #jazzy-sidebar .nav-sidebar .nav-item .nav-link.active i {
-    color: #ffffff;
-  }
-
-  #jazzy-sidebar .nav-header {
-    color: #71717a !important;
-    font-size: 0.75rem !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    font-weight: 700 !important;
-    padding: 12px 16px 4px 16px !important;
+    opacity: 0.85;
   }
 </style>
 {% endblock %}
@@ -467,112 +262,25 @@
 
 {% block content %}
 <div class="dashboard-grid">
-  <!-- Left Side: Only Reports -->
-  <div class="reports-container">
-    <div class="section-header">
-      <div>
-        <h2><i class="fas fa-file-invoice" style="color: #2563eb; margin-right: 6px;"></i> Reports</h2>
-        <p class="section-subtitle">Financial statements, general ledgers, and billing reports</p>
-      </div>
-      <div>
-        <a href="/admin/database-backup/" class="backup-button" title="Download Database Backup">
-          <i class="fas fa-database"></i> Database Backup
-        </a>
-      </div>
-    </div>
-
-    <div class="reports-list">
-      {% url 'admin:account-balance-sheet' as bs_url %}
-      <a href="{{ bs_url }}" class="report-card">
-        <div class="report-info">
-          <div class="report-icon icon-blue">
-            <i class="fas fa-balance-scale"></i>
-          </div>
-          <div class="report-details">
-            <h3>Balance Sheet</h3>
-            <p>Statement of financial position showing total assets, liabilities, and equity.</p>
-          </div>
-        </div>
-        <div class="report-arrow">
-          <span>View Report</span>
-          <i class="fas fa-arrow-right"></i>
-        </div>
-      </a>
-
-      {% url 'admin:account-ledger-report' as lr_url %}
-      <a href="{{ lr_url }}" class="report-card">
-        <div class="report-info">
-          <div class="report-icon icon-emerald">
-            <i class="fas fa-book"></i>
-          </div>
-          <div class="report-details">
-            <h3>Ledger Report</h3>
-            <p>Detailed debit and credit ledger transactions for each account.</p>
-          </div>
-        </div>
-        <div class="report-arrow">
-          <span>View Report</span>
-          <i class="fas fa-arrow-right"></i>
-        </div>
-      </a>
-
-      {% url 'admin:account-trial-balance' as tb_url %}
-      <a href="{{ tb_url }}" class="report-card">
-        <div class="report-info">
-          <div class="report-icon icon-amber">
-            <i class="fas fa-scale-balanced"></i>
-          </div>
-          <div class="report-details">
-            <h3>Trial Balance</h3>
-            <p>Summary of debit and credit balances for all chart of accounts.</p>
-          </div>
-        </div>
-        <div class="report-arrow">
-          <span>View Report</span>
-          <i class="fas fa-arrow-right"></i>
-        </div>
-      </a>
-
-      {% url 'admin:account-income-statement' as is_url %}
-      <a href="{{ is_url }}" class="report-card">
-        <div class="report-info">
-          <div class="report-icon icon-indigo">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <div class="report-details">
-            <h3>Income Statement</h3>
-            <p>Revenue and expense breakdown with calculated net profit or loss.</p>
-          </div>
-        </div>
-        <div class="report-arrow">
-          <span>View Report</span>
-          <i class="fas fa-arrow-right"></i>
-        </div>
-      </a>
-
-      {% url 'admin:projectbilling-quarterly-report' as qr_url %}
-      {% if qr_url %}
-      <a href="{{ qr_url }}" class="report-card">
-        <div class="report-info">
-          <div class="report-icon icon-purple">
-            <i class="fas fa-receipt"></i>
-          </div>
-          <div class="report-details">
-            <h3>Quarterly Billing Report</h3>
-            <p>Quarterly client billings, collected payments, and receivables.</p>
-          </div>
-        </div>
-        <div class="report-arrow">
-          <span>View Report</span>
-          <i class="fas fa-arrow-right"></i>
-        </div>
-      </a>
-      {% endif %}
+  <!-- Left Side: Standard Django App List -->
+  <div class="app-list-container">
+    <div id="content-main" class="app-list" style="width: 100%;">
+      {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
     </div>
   </div>
 
   <!-- Right Side: Analytics & Pie Chart Dashboard -->
   <div class="analytics-sidebar">
+    <!-- Database Backup Action Block -->
+    <div class="backup-action-block" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color, #e0e0e0); display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.25rem;">💾</span>
+        <span style="font-weight: 600; font-size: 0.95rem; color: var(--body-fg, #333);">Database Backup</span>
+      </div>
+      <a href="/admin/database-backup/" class="backup-button" style="background: var(--primary, #79aec8); color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px; transition: opacity 0.2s;">
+        Download Backup
+      </a>
+    </div>
 
     {% if chart_data.has_data %}
       <div class="analytics-header">
@@ -779,7 +487,7 @@
           data: values,
           backgroundColor: backgroundColors,
           borderWidth: 1,
-          borderColor: '#1e1e1e'
+          borderColor: 'var(--body-bg, #fff)'
         }]
       },
       options: {
@@ -825,15 +533,8 @@
     }
   }
 
-  // Initialize page, load chart, and ensure sidebar operates in dark mode
+  // Initialize page and load chart
   document.addEventListener('DOMContentLoaded', function() {
-    // Force dark theme on Jazzmin sidebar and document
-    document.documentElement.setAttribute('data-bs-theme', 'dark');
-    const jazzySidebar = document.getElementById('jazzy-sidebar');
-    if (jazzySidebar) {
-      jazzySidebar.setAttribute('data-bs-theme', 'dark');
-    }
-
     if (chartData && chartData.has_data) {
       // Update primary volume stat card
       const volumeStatElement = document.getElementById('stats-volume');
@@ -846,4 +547,8 @@
     }
   });
 </script>
+{% endblock %}
+
+{% block sidebar %}
+<!-- Recent Actions Hidden to optimize workspace screen area -->
 {% endblock %}
